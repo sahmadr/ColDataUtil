@@ -12,6 +12,7 @@
 #ifndef CMDARGS_H
 #define CMDARGS_H
 
+#include "errorStatements.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -23,32 +24,6 @@
 
 using std::string, std::vector, std::unordered_map;
 using stringV = std::string_view;
-
-inline const string errorNoArguments{"colDataUtil requires arguments. At "
-    "least the location of the input file to be processed must be provided. "
-    "Please consult the documentation for additional information."};
-inline const string errorInvalidOption{"An invalid option has been specified. "
-    "Please consult the documentation."};
-inline const string errorInvalidValue{"An invalid value has been specified, "
-    "which is not preceded by a proper option. Please consult the "
-    "documentation."};
-inline const string errorFileInNameMissing{"File input option has been used "
-    "but the file name has not been specified."};
-inline const string errorFileInMissing{"The location of the input file to be "
-    "processed must be provided. Please consult the documentation for "
-    "additional information."};
-inline const string errorFileInNamedAlready{"Multiple input file names cannot "
-    "be specified."};
-inline const string errorCalcFncNameInvalid{"An invalid function name has been "
-    "specified. Please consult the documentation."};
-inline const string errorColIsInt{"An integer column has been specified. "
-    "Calculations cannot be performed on an integer column."};
-inline const string errorColNamesInvalid{"None of the specified columns match "
-    "the columns in the input file."};
-inline const string errorFileOutNameMissing{"File output option has been used "
-    "but the file name has not been specified."};
-inline const string generalErrorMessage{"Please contact the developer if "
-    "further assistance is required. Thank you."};
 
 namespace CmdArgs {
     enum class Option { fileIn, function, column, row, timestep, fileOut,

@@ -14,6 +14,7 @@
 #ifndef COLUMNDATA_H
 #define COLUMNDATA_H
 
+#include "errorStatements.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -31,29 +32,6 @@ using   std::string, std::vector, std::set, std::tuple, std::tie, std::ios_base,
         std::numeric_limits, std::cout, std::endl,
         std::ifstream, std::ofstream, std::getline, std::streampos;
 using stringV = std::string_view;
-
-inline const string errorColNameDouble{"Double vector column name repeated. "
-    "Please change one of the column names."};
-inline const string errorColNameInt{"Integer vector column name repeated. "
-    "Please change one of the column names."};
-inline const string errorHeaderFormatIncorrect{"An incorrect format has been "
-    "used for the header line in the file."};
-inline const string errorDlmFormatIncorrect{"An incorrect delimiter has "
-    "been specified OR an incorrect data format has been used in the file. "};
-inline const string errorHeaderDlmTypeUndefined{"The delimiter type of header "
-    "was undefined. This could be due to an incorrect formatting of the header "
-    "line. Please report this issue. Thank you."};
-inline const string errorDataFormatIncorrect{"An incorrect format has been "
-    "used for the numeric data in the file."};
-inline const string errorColNameAbsent{"Requested column name not found."};
-inline const string errorColNoAbsent{"Requested column number not found."};
-inline const string errorColAbsent{"Requested column not found."};
-inline const string errorTimeStepTooSmall{"Invalid timestep specified. "
-    "The specified timestep is less than the smallest found in the file."};
-inline const string errorTimeStepTooLarge{"Invalid timestep specified. "
-    "The specified timestep is larger than the largest found in the file."};
-inline const string errorInputFile{"Input file could not be opened."};
-inline const string errorOutputFile{"Output file could not be opened."};
 
 enum class Delimitation { spaced, delimited, spacedAndDelimited };
 
