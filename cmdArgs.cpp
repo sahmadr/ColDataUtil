@@ -2,89 +2,20 @@
  * @file        cmdArgs.cpp
  *
  * @project     colDataUtil
- * @version     0.1
+ * @version     0.2
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
- * @date        2020-11-22
  *
- * @brief       Reading command line input options.
+ * @brief       Read command line input options.
+ *
  */
 
+#include "namespaces.h"
 #include "cmdArgs.h"
-#include "columnData.h"
-#include "calcFunction.h"
+#include "mappings.h"
+#include "errorMsgs.h"
 
-using std::invalid_argument;
 using namespace CmdArgs;
-
-const unordered_map<string, Option> CmdArgs::mapStrToOption {
-        {"-s",              Option::fileIn},
-        {"--source",        Option::fileIn},
-        {"-i",              Option::fileIn},
-        {"--in",            Option::fileIn},
-        {"-f",              Option::function},
-        {"--fnc",           Option::function},
-        {"--function",      Option::function},
-        {"-c",              Option::column},
-        {"--col",           Option::column},
-        {"--column",        Option::column},
-        {"--columns",       Option::column},
-        {"-c",              Option::column},
-        {"-r",              Option::row},
-        {"--row",           Option::row},
-        {"--rows",          Option::row},
-        {"-t",              Option::timestep},
-        {"--time",          Option::timestep},
-        {"--timestep",      Option::timestep},
-        {"--timesteps",     Option::timestep},
-        {"-d",              Option::fileOut},
-        {"--destination",   Option::fileOut},
-        {"-o",              Option::fileOut},
-        {"--out",           Option::fileOut},
-        {"-p",              Option::printData},
-        {"--print-data",    Option::printData},
-        {"-h",              Option::help},
-        {"--help",          Option::help},
-        {"-v",              Option::version},
-        {"--version",       Option::version},
-    };
-
-const std::unordered_map<string, CalcFncId> CmdArgs::mapStrToCalcFnc {
-        {"min",                 CalcFncId::findMin},
-        {"minimum",             CalcFncId::findMin},
-        {"max",                 CalcFncId::findMax},
-        {"maximum",             CalcFncId::findMax},
-        {"abs-min",             CalcFncId::findAbsMin},
-        {"absmin",              CalcFncId::findAbsMin},
-        {"absolute-minimum",    CalcFncId::findAbsMin},
-        {"abs-max",             CalcFncId::findAbsMax},
-        {"absmax",              CalcFncId::findAbsMax},
-        {"absolute-maximum",    CalcFncId::findAbsMax},
-        {"mean",                CalcFncId::findMean},
-        {"avg",                 CalcFncId::findMean},
-        {"average",             CalcFncId::findMean},
-        {"rms",                 CalcFncId::findQuadraticMean},
-        {"rms-mean",            CalcFncId::findQuadraticMean},
-        {"rms-avg",             CalcFncId::findQuadraticMean},
-        {"quadratic",           CalcFncId::findQuadraticMean},
-        {"quadratic-rms",       CalcFncId::findQuadraticMean},
-        {"quadratic-mean",      CalcFncId::findQuadraticMean},
-        {"cubic",               CalcFncId::findCubicMean},
-        {"cubic-mean",          CalcFncId::findCubicMean},
-        {"cubic-avg",           CalcFncId::findCubicMean},
-    };
-
-template<typename T>
-const std::unordered_map<CalcFncId, double(*)(T, size_t, size_t)>
-    CmdArgs::mapCalcFncIdToCalcFnc = {
-        {CalcFncId::findMin,            CalcFunction::findMin},
-        {CalcFncId::findMax,            CalcFunction::findMax},
-        {CalcFncId::findAbsMin,         CalcFunction::findAbsMin},
-        {CalcFncId::findAbsMax,         CalcFunction::findAbsMax},
-        {CalcFncId::findMean,           CalcFunction::findMean},
-        {CalcFncId::findQuadraticMean,  CalcFunction::findQuadraticMean},
-        {CalcFncId::findCubicMean,      CalcFunction::findCubicMean}
-    };
 
 //----------------------------------------------------------------------------//
 //****************************** CmdArgs::Args *******************************//
@@ -92,7 +23,7 @@ const std::unordered_map<CalcFncId, double(*)(T, size_t, size_t)>
 
 Args::Args(int argc, char* argv[]) :
 m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
-m_fileInP{nullptr}, m_calcFncP{nullptr}, m_columnP{nullptr}, m_rowP{nullptr},
+m_fileInP{nullptr}, m_calcP{nullptr}, m_columnP{nullptr}, m_rowP{nullptr},
 m_timestepP{nullptr}, m_fileOutP{nullptr}, m_printDataP{nullptr} {
     if (argc<=1) { throw std::logic_error(errorNoArguments); }
     for (s_c=1; s_c<m_argc; ++s_c) {
@@ -109,11 +40,11 @@ m_timestepP{nullptr}, m_fileOutP{nullptr}, m_printDataP{nullptr} {
                         break;
                     case Option::function:
                         cout << "Found key = function" << std::endl;
-                        if (!m_calcFncP) {
-                            m_calcFncP = new CalcFnc(s_c, m_argc, m_argv);
+                        if (!m_calcP) {
+                            m_calcP = new Calc(s_c, m_argc, m_argv);
                         }
                         else {
-                            m_calcFncP->setCalcFncIdSet(s_c, m_argc, m_argv);
+                            m_calcP->setCalcIdSet(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::column:
@@ -172,10 +103,10 @@ void Args::process() {
     if (!m_columnP) { m_columnP = new Column(); }
     m_columnP->process();
 
-    if (!m_calcFncP && (m_columnP || m_timestepP || m_rowP || m_fileOutP)) {
-        m_calcFncP = new CalcFnc();
+    if (!m_calcP && (m_columnP || m_timestepP || m_rowP || m_fileOutP)) {
+        m_calcP = new Calc();
     }
-    m_calcFncP->process();
+    m_calcP->process();
 
     if (m_printDataP) { m_printDataP->process(); }
 
@@ -186,21 +117,21 @@ void Args::output() {
 
     if (m_printDataP) { ColData::printData(m_printDataP->getDelimiter()); }
 
-    if (m_calcFncP) {
+    if (m_calcP) {
         if (!m_fileOutP) {
             for (const int colNo : m_columnP->getColSet()) {
-                for (const CalcFncId id : m_calcFncP->getCalcFncIdSet()) {
+                for (const CalcId id : m_calcP->getCalcIdSet()) {
                     ColData::outputValue(
-                        mapCalcFncIdToCalcFnc<int>.at(id), colNo);
+                        mapCalcIdToCalc<int>.at(id), colNo);
                 }
             }
         }
         else {
             for (const string& fileOut : m_fileOutP->getFileLocationSet()) {
                 for (const int colNo : m_columnP->getColSet()) {
-                    for (const CalcFncId id : m_calcFncP->getCalcFncIdSet()) {
+                    for (const CalcId id : m_calcP->getCalcIdSet()) {
                         ColData::outputValue(fileOut,
-                            mapCalcFncIdToCalcFnc<int>.at(id), colNo);
+                            mapCalcIdToCalc<int>.at(id), colNo);
                     }
                 }
                 cout<< "The output has been written to the file \""
@@ -243,36 +174,36 @@ const string& FileIn::getFileLocation() const { return m_fileLocation; }
 const string& FileIn::getDelimiter() const { return m_delimiter; }
 
 //----------------------------------------------------------------------------//
-//***************************** CmdArgs::CalcFnc *****************************//
+//***************************** CmdArgs::Calc *****************************//
 //----------------------------------------------------------------------------//
 
-CalcFnc::CalcFnc(int c, int argC, const vector<string>& argV) {
-    setCalcFncIdSet(c, argC, argV);
+Calc::Calc(int c, int argC, const vector<string>& argV) {
+    setCalcIdSet(c, argC, argV);
 }
-void CalcFnc::setCalcFncIdSet(int c, int argC, const vector<string>& argV) {
+void Calc::setCalcIdSet(int c, int argC, const vector<string>& argV) {
     while (c+1 < argC && argV[c+1][0] != '-') {
         Args::setCount(++c);
-        std::unordered_map<string, CalcFncId>::const_iterator
-            mapIt{mapStrToCalcFnc.find(argV[c])};
-        if (mapIt != mapStrToCalcFnc.end()) {
-            if (std::find(m_calcFncIdSet.begin(), m_calcFncIdSet.end(),
-                    mapIt->second) == m_calcFncIdSet.end()) {
-                m_calcFncIdSet.push_back(mapIt->second);
+        std::unordered_map<string, CalcId>::const_iterator
+            mapIt{mapStrToCalc.find(argV[c])};
+        if (mapIt != mapStrToCalc.end()) {
+            if (std::find(m_calcIdSet.begin(), m_calcIdSet.end(),
+                    mapIt->second) == m_calcIdSet.end()) {
+                m_calcIdSet.push_back(mapIt->second);
             }
         }
-        else { throw invalid_argument(errorCalcFncNameInvalid); }
+        else { throw invalid_argument(errorCalcNameInvalid); }
     }
 }
-void CalcFnc::process() {
-    if (m_calcFncIdSet.empty()) {
-        m_calcFncIdSet.insert(m_calcFncIdSet.end(), {CalcFncId::findMin,
-            CalcFncId::findMax, CalcFncId::findAbsMin, CalcFncId::findAbsMax,
-            CalcFncId::findMean, CalcFncId::findQuadraticMean,
-            CalcFncId::findCubicMean});
+void Calc::process() {
+    if (m_calcIdSet.empty()) {
+        m_calcIdSet.insert(m_calcIdSet.end(), {CalcId::findMin,
+            CalcId::findMax, CalcId::findAbsMin, CalcId::findAbsMax,
+            CalcId::findMean, CalcId::findQuadraticMean,
+            CalcId::findCubicMean});
     }
 }
-const vector<CalcFncId>& CalcFnc::getCalcFncIdSet() const {
-    return m_calcFncIdSet;
+const vector<CalcId>& Calc::getCalcIdSet() const {
+    return m_calcIdSet;
 }
 
 //----------------------------------------------------------------------------//
@@ -411,9 +342,9 @@ void testInputTimestep(const size_t timestepBgn,
         const size_t timestepEnd) {
     vector<int> timesteps{IntV::getOneP(0)->getData()};
     if (timestepBgn < static_cast<size_t>(timesteps[0])) {
-        throw std::runtime_error(errorTimeStepTooSmall);
+        throw runtime_error(errorTimeStepTooSmall);
     }
     if (timestepEnd > timesteps.size()) {
-        throw std::runtime_error(errorTimeStepTooLarge);
+        throw runtime_error(errorTimeStepTooLarge);
     }
 } */

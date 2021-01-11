@@ -1,21 +1,22 @@
 /**
- * @file        columnData.cpp
+ * @file        colData.cpp
  *
  * @project     colDataUtil
- * @version     0.1
+ * @version     0.2
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
- * @date        2020-11-19
  *
- * @brief       Handling the column data; reading it from the files and storing
- *              it correctly.
+ * @brief       Handle the column data; read it from the files and store it
+ *              correctly.
  */
 
-#include "columnData.h"
-#include "calcFunction.h"
+#include "namespaces.h"
+#include "colData.h"
+#include "calcFnc.h"
+#include "mappings.h"
+#include "errorMsgs.h"
 
 using namespace ColData;
-using std::runtime_error;
 
 //----------------------------------------------------------------------------//
 //*************************** ColData::IntV Class ****************************//
@@ -128,7 +129,7 @@ double DoubleV::getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const {
 /*
  * Check if the line is a number line, i.e. it has numerical data.
  */
-bool ColData::isNumberLine(std::string_view lineStr, std::string dlm) {
+bool ColData::isNumberLine(stringV lineStr, string dlm) {
     string comparisonStr{"0123456789Ee-+."};
     comparisonStr.append(dlm);
     return std::all_of(lineStr.begin(), lineStr.end(), [&](char c) {
@@ -544,7 +545,25 @@ const tuple<size_t, size_t> ColData::returnRows(const int column,
  * Perform the selected operation on the selected column and print the result
  * to the terminal.
  */
-void ColData::outputValue(double(*calcFnc)(int , size_t, size_t),
+void ColData::outputValue(calcType calc, const int column,
+        const size_t timestepBgn, const size_t timestepEnd) {
+    vector<int> timesteps{IntV::getOneP(0)->getData()};
+    DoubleV* dVP{DoubleV::getOnePFromCol(column)};
+
+    size_t rowBgn, rowEnd;
+    tie(rowBgn, rowEnd) = returnRows(column, timestepBgn, timestepEnd);
+
+    string timeStepsStr = "timesteps " + std::to_string(timesteps.at(rowBgn))
+                            + " to " + std::to_string(timesteps.at(rowEnd));
+    printer(dVP->getColName(), timeStepsStr,
+        CalcFnc::mapCalcToStr<int>.at(calc),
+        calc(column, rowBgn, rowEnd));
+}
+
+/*
+ * Perform the selected operation on the selected column and file the result.
+ */
+void ColData::outputValue(const string& fileName, calcType calc,
         const int column, const size_t timestepBgn, const size_t timestepEnd) {
     vector<int> timesteps{IntV::getOneP(0)->getData()};
     DoubleV* dVP{DoubleV::getOnePFromCol(column)};
@@ -555,29 +574,9 @@ void ColData::outputValue(double(*calcFnc)(int , size_t, size_t),
     string timeStepsStr = "timesteps " + std::to_string(timesteps.at(rowBgn))
                             + " to " + std::to_string(timesteps.at(rowEnd));
 
-    printer(dVP->getColName(), timeStepsStr,
-        CalcFunction::mapCalcFncToStr<int>.at(calcFnc),
-        calcFnc(column, rowBgn, rowEnd));
-}
-
-/*
- * Perform the selected operation on the selected column and file the result.
- */
-void ColData::outputValue(const string& fileName,
-        double(*calcFnc)(int , size_t, size_t), const int column,
-        const size_t timestepBgn, const size_t timestepEnd) {
-    vector<int> timesteps{IntV::getOneP(0)->getData()};
-    DoubleV* dVP{DoubleV::getOnePFromCol(column)};
-
-    size_t rowBgn, rowEnd;
-    tie(rowBgn, rowEnd) = returnRows(column, timestepBgn, timestepEnd);
-
-    string timeStepsStr = "timesteps " + std::to_string(timesteps.at(rowBgn))
-                            + " to " + std::to_string(timesteps.at(rowEnd));
-
     filer(fileName, dVP->getColName(), timeStepsStr,
-        CalcFunction::mapCalcFncToStr<int>.at(calcFnc),
-        calcFnc(column, rowBgn, rowEnd));
+        CalcFnc::mapCalcToStr<int>.at(calc),
+        calc(column, rowBgn, rowEnd));
 }
 
 /*

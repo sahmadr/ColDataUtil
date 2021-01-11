@@ -1,83 +1,20 @@
 /**
- * @file        columnData.h
+ * @file        colData.h
  *
  * @project     colDataUtil
- * @version     0.1
+ * @version     0.2
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
- * @date        2020-11-19
  *
- * @brief       Handling the column data; reading it from the files and storing
- *              it correctly.
+ * @brief       Handle the column data; read it from the files and store it
+ *              correctly.
  */
 
-#ifndef COLUMNDATA_H
-#define COLUMNDATA_H
+#ifndef COLDATA_H
+#define COLDATA_H
 
-#include "errorStatements.h"
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <iomanip>
-#include <cctype>
-#include <limits>
-#include <vector>
-#include <tuple>
-#include <set>
-#include <string>
-#include <algorithm>
-#include <string_view>
-
-using   std::string, std::vector, std::set, std::tuple, std::tie, std::ios_base,
-        std::numeric_limits, std::cout, std::endl,
-        std::ifstream, std::ofstream, std::getline, std::streampos;
-using stringV = std::string_view;
-
-enum class Delimitation { spaced, delimited, spacedAndDelimited };
-
-//----------------------------------------------------------------------------//
-//**************************** ColData Namespace *****************************//
-//----------------------------------------------------------------------------//
-
-namespace ColData {
-    inline constexpr int maxRowsToCheckInt = 1000;
-    inline constexpr int delimiterLenLimit = 3;
-    class DoubleV;
-    class IntV;
-    bool isNumberLine(std::string_view lineStr, std::string dlm);
-    tuple<streampos, streampos> findLinePositions(ifstream& iFile,
-        const string& dlm);
-    tuple<string, Delimitation> parseHeaderLine(ifstream& iFile,
-        const string& dlm, const streampos headerLinePos);
-    tuple<int, vector<string>> identifyColumnHeaders(string headerLine,
-        const string& dlm, const Delimitation headerDlmType);
-    Delimitation parseColumnData(ifstream& iFile, const string& dlm,
-        const streampos dataLinePos);
-    void classifyColumns(ifstream& iFile, const string& dlm,
-        const Delimitation dataDlmType, const streampos dataLinePos,
-        const int colTotal);
-    void createVectors(const vector<string>& colNames);
-    void populateVectors(ifstream& iFile, const string& dlm,
-        const Delimitation dataDlmType, const streampos dataLinePos);
-    void loadData(const string& fileName, const string& dlm);
-    void printAvailableTimestepRange();
-    void printColNames();
-    void printData(string dlm=",");
-    void fileData(string fileName, string dlm);
-    const tuple<size_t, size_t> returnRows(const int column,
-        const size_t timestepBgn, const size_t timestepEnd);
-    void printer(const string& colName,
-        const string& timeStepsStr, const string& fncName, double value);
-    void filer(const string& fileName, const string& colName,
-        const string& timeStepsStr, const string& fncName, double value);
-    void outputValue(double(*calcFnc)(int, size_t, size_t),
-        const int column, const size_t timestepBgn=1,
-        const size_t timestepEnd=0);
-    void outputValue(const string& fileName,
-        double(*calcFnc)(int , size_t, size_t), const int column,
-        const size_t timestepBgn=1, const size_t timestepEnd=0);
-    // const string& rowTimestepsStrMaker
-}
+#include "namespaces.h"
+#include "errorMsgs.h"
 
 //----------------------------------------------------------------------------//
 //*************************** ColData::IntV Class ****************************//
@@ -122,7 +59,7 @@ class ColData::IntV {
     for (IntV* iVP : s_intVSetP) {
         if (inputCol == iVP->getCol(col)) { id = iVP->m_id; }
     }
-    if (id<0) { throw std::runtime_error(errorColAbsent); }
+    if (id<0) { throw runtime_error(errorColAbsent); }
     return s_intVSetP[id];
     }
 };

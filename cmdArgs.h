@@ -2,49 +2,21 @@
  * @file        cmdArgs.h
  *
  * @project     colDataUtil
- * @version     0.1
+ * @version     0.2
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
- * @date        2020-11-22
  *
- * @brief       Reading command line input options.
+ * @brief       Read command line input options.
+ *
  */
+
 #ifndef CMDARGS_H
 #define CMDARGS_H
 
-#include "errorStatements.h"
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <string>
-#include <unordered_map>
-#include <tuple>
-#include <algorithm>
-#include <string_view>
-
-using std::string, std::vector, std::unordered_map;
-using stringV = std::string_view;
-
-namespace CmdArgs {
-    enum class Option { fileIn, function, column, row, timestep, fileOut,
-        printData, help, version };
-    enum class CalcFncId { findMin, findMax, findAbsMin, findAbsMax, findMean,
-        findQuadraticMean, findCubicMean };
-    class Args;
-    class FileIn;
-    class CalcFnc;
-    class Column;
-    class Row;
-    class Timestep;
-    class FileOut;
-    class PrintData;
-    class Help;
-    class Version;
-    extern const unordered_map<string, Option> mapStrToOption;
-    extern const unordered_map<string, CalcFncId> mapStrToCalcFnc;
-    template<typename T> const std::unordered_map<
-        CalcFncId, double(*)(T, size_t, size_t)> mapCalcFncIdToCalcFnc;
-}
+#include "namespaces.h"
+#include "colData.h"
+#include "calcFnc.h"
+#include "errorMsgs.h"
 
 //----------------------------------------------------------------------------//
 //****************************** CmdArgs::Args *******************************//
@@ -57,7 +29,7 @@ class CmdArgs::Args {
     const vector<string>    m_argv;         // complete set of arguments
     const string            m_programName;  // program name
     FileIn*                 m_fileInP;      // file with data to be processed
-    CalcFnc*                m_calcFncP;     // value functions to be calculated
+    Calc*                m_calcP;     // value functions to be calculated
     Column*                 m_columnP;      // columns to be processed
     Row*                    m_rowP;         // range of rows
     Timestep*               m_timestepP;    // range of timesteps
@@ -101,22 +73,22 @@ class CmdArgs::FileIn {
 };
 
 //----------------------------------------------------------------------------//
-//***************************** CmdArgs::CalcFnc ******************************//
+//***************************** CmdArgs::Calc ******************************//
 //----------------------------------------------------------------------------//
 
-class CmdArgs::CalcFnc {
+class CmdArgs::Calc {
   private:
-    vector<CmdArgs::CalcFncId>   m_calcFncIdSet{};
+    vector<CmdArgs::CalcId>   m_calcIdSet{};
 
-    CalcFnc(const CalcFnc&) = delete;
-    CalcFnc& operator=(const CalcFnc&) = delete;
+    Calc(const Calc&) = delete;
+    Calc& operator=(const Calc&) = delete;
 
   public:
-    explicit CalcFnc() = default;
-    explicit CalcFnc(int c, int argC, const vector<string>& argV);
-    void setCalcFncIdSet(int c, int argC, const vector<string>& argV);
+    explicit Calc() = default;
+    explicit Calc(int c, int argC, const vector<string>& argV);
+    void setCalcIdSet(int c, int argC, const vector<string>& argV);
     void process();
-    const vector<CmdArgs::CalcFncId>& getCalcFncIdSet() const;
+    const vector<CmdArgs::CalcId>& getCalcIdSet() const;
 };
 
 //----------------------------------------------------------------------------//

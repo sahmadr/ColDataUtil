@@ -1,22 +1,19 @@
 /**
- * @file        errorStatements.h
+ * @file        errorMsgs.h
  *
  * @project     colDataUtil
- * @version     0.1
+ * @version     0.2
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
- * @date        2021-01-07
  *
- * @brief       Handling the column data; reading it from the files and storing
- *              it correctly.
+ * @brief       All the error messages.
+ *
  */
 
-#ifndef ERRORSTATEMENTS_H
-#define ERRORSTATEMENTS_H
+#ifndef ERRORMSGS_H
+#define ERRORMSGS_H
 
-#include <string>
-
-using std::string;
+#include "namespaces.h"
 
 inline const string
 
@@ -32,7 +29,7 @@ errorFileInNameMissing{"File input option has been used but the file name has "
 errorFileInMissing{"The location of the input file to be processed must be "
     "provided. Please consult the documentation for additional information."},
 errorFileInNamedAlready{"Multiple input file names cannot be specified."},
-errorCalcFncNameInvalid{"An invalid function name has been specified. Please "
+errorCalcNameInvalid{"An invalid function name has been specified. Please "
     "consult the documentation."},
 errorColIsInt{"An integer column has been specified. Calculations cannot be "
     "performed on an integer column."},

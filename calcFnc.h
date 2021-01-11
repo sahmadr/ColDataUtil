@@ -1,64 +1,29 @@
 /**
- * @file        calcFunction.h
+ * @file        calcFnc.h
  *
  * @project     colDataUtil
- * @version     0.1
+ * @version     0.2
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
- * @date        2020-11-19
  *
  * @brief       Functions for calculations on column data.
+ *
  */
 
 #ifndef CALCFUNCTION_H
 #define CALCFUNCTION_H
 
-#include "columnData.h"
-#include <cstddef>
-#include <unordered_map>
-#include <string>
-#include <cmath>
+#include "namespaces.h"
+#include "colData.h"
 
-using std::string;
 using namespace ColData;
-
-namespace CalcFunction {
-    template<typename T> double findMax(const T column,
-        const size_t rowBgn, const size_t rowEnd);
-    template<typename T> double findMin(const T column,
-        const size_t rowBgn, const size_t rowEnd);
-    template<typename T> double findAbsMax(const T column,
-        const size_t rowBgn, const size_t rowEnd);
-    template<typename T> double findAbsMin(const T column,
-        const size_t rowBgn, const size_t rowEnd);
-    template<typename T> double findMean(const T column,
-        const size_t rowBgn, const size_t rowEnd);
-    template<typename T> double findQuadraticMean(const T column,
-        const size_t rowBgn, const size_t rowEnd);
-    template<typename T> double findCubicMean(const T column,
-        const size_t rowBgn, const size_t rowEnd);
-    template<typename T> const std::unordered_map<
-        double(*)(T, size_t, size_t), string> mapCalcFncToStr;
-}
-
-template<typename T>
-const std::unordered_map<double(*)(T, size_t, size_t), string>
-    CalcFunction::mapCalcFncToStr = {
-        {CalcFunction::findMin,           "minimum"},
-        {CalcFunction::findMax,           "maximum"},
-        {CalcFunction::findAbsMin,        "absolute minimum"},
-        {CalcFunction::findAbsMax,        "absolute maximum"},
-        {CalcFunction::findMean,          "mean"},
-        {CalcFunction::findQuadraticMean, "quadratic mean (RMS)"},
-        {CalcFunction::findCubicMean,     "cubic mean"}
-    };
 
 /*
  * Find the maximum value of the given column using its Id number or name and
  * return the result.
  */
 template<typename T>
-double CalcFunction::findMax(const T column,
+double CalcFnc::findMax(const T column,
         const size_t rowBgn, const size_t rowEnd) {
     const vector<double> colData{DoubleV::getOnePFromCol(column)->getData()};
     double maxVal{colData[rowBgn]};
@@ -73,7 +38,7 @@ double CalcFunction::findMax(const T column,
  * return the result.
  */
 template<typename T>
-double CalcFunction::findMin(const T column,
+double CalcFnc::findMin(const T column,
         const size_t rowBgn, const size_t rowEnd) {
     const vector<double> colData{DoubleV::getOnePFromCol(column)->getData()};
     double minVal{colData[rowBgn]};
@@ -88,7 +53,7 @@ double CalcFunction::findMin(const T column,
  * name and return the result.
  */
 template<typename T>
-double CalcFunction::findAbsMax(const T column,
+double CalcFnc::findAbsMax(const T column,
         const size_t rowBgn, const size_t rowEnd) {
     const vector<double> colData{DoubleV::getOnePFromCol(column)->getData()};
     double maxVal{std::abs(colData[rowBgn])};
@@ -103,7 +68,7 @@ double CalcFunction::findAbsMax(const T column,
  * name and return the result.
  */
 template<typename T>
-double CalcFunction::findAbsMin(const T column,
+double CalcFnc::findAbsMin(const T column,
         const size_t rowBgn, const size_t rowEnd) {
     const vector<double> colData{DoubleV::getOnePFromCol(column)->getData()};
     double minVal{std::abs(colData[rowBgn])};
@@ -118,7 +83,7 @@ double CalcFunction::findAbsMin(const T column,
  * the result.
  */
 template<typename T>
-double CalcFunction::findMean(const T column,
+double CalcFnc::findMean(const T column,
         const size_t rowBgn, const size_t rowEnd) {
     return DoubleV::getOnePFromCol(column)->getSum(rowBgn, rowEnd)
             /(rowEnd - rowBgn + 1);
@@ -129,7 +94,7 @@ double CalcFunction::findMean(const T column,
  * name and return the result.
  */
 template<typename T>
-double CalcFunction::findQuadraticMean(const T column,
+double CalcFnc::findQuadraticMean(const T column,
         const size_t rowBgn, const size_t rowEnd) {
     return std::sqrt(
                 DoubleV::getOnePFromCol(column)->getSumOfSquares(rowBgn, rowEnd)
@@ -142,7 +107,7 @@ double CalcFunction::findQuadraticMean(const T column,
  * name and return the result.
  */
 template<typename T>
-double CalcFunction::findCubicMean(const T column,
+double CalcFnc::findCubicMean(const T column,
         const size_t rowBgn, const size_t rowEnd) {
     return std::cbrt(
                 DoubleV::getOnePFromCol(column)->getSumOfCubes(rowBgn, rowEnd)
