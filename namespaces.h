@@ -87,11 +87,12 @@ namespace ColData {
 //----------------------------------------------------------------------------//
 
 namespace CmdArgs {
-    enum class Option { fileIn, function, column, row, timestep, fileOut,
-        printData, help, version };
+    enum class Option { delimiter, fileIn, function, column, row, timestep,
+        fileOut, printData, help, version };
     enum class CalcId { findMin, findMax, findAbsMin, findAbsMax, findMean,
         findQuadraticMean, findCubicMean };
     class Args;
+    class Delimiter;
     class FileIn;
     class Calc;
     class Column;
@@ -103,8 +104,8 @@ namespace CmdArgs {
     class Version;
     extern const unordered_map<string, Option> mapStrToOption;
     extern const unordered_map<string, CalcId> mapStrToCalc;
-    template<typename T> const std::unordered_map<
-        CalcId, calcType> mapCalcIdToCalc;
+    template<typename T> const std::unordered_map<CalcId, calcType>
+        mapCalcIdToCalc;
 }
 
 //----------------------------------------------------------------------------//

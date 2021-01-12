@@ -28,8 +28,9 @@ class CmdArgs::Args {
     const int               m_argc;         // total number of arguments
     const vector<string>    m_argv;         // complete set of arguments
     const string            m_programName;  // program name
+    Delimiter*              m_delimiterP;   // delimiter
     FileIn*                 m_fileInP;      // file with data to be processed
-    Calc*                m_calcP;     // value functions to be calculated
+    Calc*                   m_calcP;        // value functions to be calculated
     Column*                 m_columnP;      // columns to be processed
     Row*                    m_rowP;         // range of rows
     Timestep*               m_timestepP;    // range of timesteps
@@ -52,13 +53,29 @@ class CmdArgs::Args {
 };
 
 //----------------------------------------------------------------------------//
+//**************************** CmdArgs::Delimiter ****************************//
+//----------------------------------------------------------------------------//
+
+class CmdArgs::Delimiter {
+  private:
+    string m_delimiter{","};
+
+    Delimiter(const Delimiter&) = delete;
+    Delimiter& operator=(const Delimiter&) = delete;
+
+  public:
+    explicit Delimiter() = default;
+    explicit Delimiter(int c, const vector<string>& argV);
+    const string& getDelimiter() const;
+};
+
+//----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileIn ******************************//
 //----------------------------------------------------------------------------//
 
 class CmdArgs::FileIn {
   private:
     string m_fileLocation{""};
-    string m_delimiter{","};
 
     FileIn() = delete;
     FileIn(const FileIn&) = delete;
@@ -66,14 +83,13 @@ class CmdArgs::FileIn {
 
   public:
     explicit FileIn(int c, int argC, const vector<string>& argV);
-    explicit FileIn(int argC, const vector<string>& argV);
-    void process();
+    explicit FileIn(const vector<string>& argV);
+    void process(const string& delimiter);
     const string& getFileLocation() const;
-    const string& getDelimiter() const;
 };
 
 //----------------------------------------------------------------------------//
-//***************************** CmdArgs::Calc ******************************//
+//****************************** CmdArgs::Calc *******************************//
 //----------------------------------------------------------------------------//
 
 class CmdArgs::Calc {

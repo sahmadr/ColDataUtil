@@ -23,8 +23,9 @@ using namespace CmdArgs;
 
 Args::Args(int argc, char* argv[]) :
 m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
-m_fileInP{nullptr}, m_calcP{nullptr}, m_columnP{nullptr}, m_rowP{nullptr},
-m_timestepP{nullptr}, m_fileOutP{nullptr}, m_printDataP{nullptr} {
+m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr}, m_columnP{nullptr},
+m_rowP{nullptr}, m_timestepP{nullptr}, m_fileOutP{nullptr},
+m_printDataP{nullptr} {
     if (argc<=1) { throw std::logic_error(errorNoArguments); }
     for (s_c=1; s_c<m_argc; ++s_c) {
         if (m_argv[s_c][0] == '-') {
@@ -32,6 +33,12 @@ m_timestepP{nullptr}, m_fileOutP{nullptr}, m_printDataP{nullptr} {
                 mapIt{mapStrToOption.find(m_argv[s_c])};
             if (mapIt != mapStrToOption.end()) {
                 switch (mapIt->second) {
+                    case Option::delimiter:
+                        if (!m_delimiterP) {
+                            m_delimiterP = new Delimiter(s_c, m_argv);
+                        }
+                        else {throw invalid_argument(errorDlmSpecifiedAlready);}
+                        break;
                     case Option::fileIn:
                         if (!m_fileInP) {
                             m_fileInP = new FileIn(s_c, m_argc, m_argv);
@@ -90,15 +97,17 @@ m_timestepP{nullptr}, m_fileOutP{nullptr}, m_printDataP{nullptr} {
             else { throw invalid_argument(errorInvalidOption); }
         }
         else if (s_c == 1) {
-            if (!m_fileInP) { m_fileInP = new FileIn(m_argc, m_argv); }
+            if (!m_fileInP) { m_fileInP = new FileIn(m_argv); }
             else { throw invalid_argument(errorFileInNamedAlready); }
         }
         else { throw invalid_argument(errorInvalidValue); }
     }
 }
 void Args::process() {
+    if (!m_delimiterP) { m_delimiterP = new Delimiter(); }
+
     if (!m_fileInP) { throw invalid_argument(errorFileInMissing); }
-    m_fileInP->process();
+    m_fileInP->process(m_delimiterP->getDelimiter());
 
     if (!m_columnP) { m_columnP = new Column(); }
     m_columnP->process();
@@ -147,31 +156,31 @@ const vector<string>& Args::getArgV() const { return m_argv; }
 const string Args::getProgramName() const   { return m_programName; }
 
 //----------------------------------------------------------------------------//
+//**************************** CmdArgs::Delimiter ****************************//
+//----------------------------------------------------------------------------//
+
+Delimiter::Delimiter(int c, const vector<string>& argV) {
+    m_delimiter = argV[Args::setCount(++c)];
+}
+const string& Delimiter::getDelimiter() const { return m_delimiter; }
+
+//----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileIn ******************************//
 //----------------------------------------------------------------------------//
 
 FileIn::FileIn(int c, int argC, const vector<string>& argV) {
     if (c+1 < argC && argV[c+1][0] != '-') {
-        if (c+2 < argC && argV[c+2][0] != '-') {
-            m_fileLocation = argV[c+1],
-            m_delimiter = argV[c+2];
-            Args::setCount(c+2);
-        }
-        else { m_fileLocation = argV[Args::setCount(++c)]; }
+        m_fileLocation = argV[Args::setCount(++c)];
     }
     else { throw invalid_argument(errorFileInNameMissing); }
 }
-FileIn::FileIn(int argC, const vector<string>& argV) {
-    if (argC > 2 && argV[2][0] != '-') {
-        m_fileLocation = argV[1];
-        m_delimiter = argV[2];
-        Args::setCount(2);
-    }
-    else { m_fileLocation = argV[Args::setCount(1)]; }
+FileIn::FileIn(const vector<string>& argV) {
+    m_fileLocation = argV[Args::setCount(1)];
 }
-void FileIn::process() { ColData::loadData(m_fileLocation, m_delimiter); }
+void FileIn::process(const string& delimiter) {
+    ColData::loadData(m_fileLocation, delimiter);
+}
 const string& FileIn::getFileLocation() const { return m_fileLocation; }
-const string& FileIn::getDelimiter() const { return m_delimiter; }
 
 //----------------------------------------------------------------------------//
 //***************************** CmdArgs::Calc *****************************//
@@ -348,3 +357,30 @@ void testInputTimestep(const size_t timestepBgn,
         throw runtime_error(errorTimeStepTooLarge);
     }
 } */
+
+
+//----------------------------------------------------------------------------//
+/*
+FileIn::FileIn(int c, int argC, const vector<string>& argV) {
+    if (c+1 < argC && argV[c+1][0] != '-') {
+        if (c+2 < argC && argV[c+2][0] != '-') {
+            m_fileLocation = argV[c+1],
+            m_delimiter = argV[c+2];
+            Args::setCount(c+2);
+        }
+        else { m_fileLocation = argV[Args::setCount(++c)]; }
+    }
+    else { throw invalid_argument(errorFileInNameMissing); }
+}
+FileIn::FileIn(int argC, const vector<string>& argV) {
+    if (argC > 2 && argV[2][0] != '-') {
+        m_fileLocation = argV[1];
+        m_delimiter = argV[2];
+        Args::setCount(2);
+    }
+    else { m_fileLocation = argV[Args::setCount(1)]; }
+}
+void FileIn::process() { ColData::loadData(m_fileLocation, m_delimiter); }
+const string& FileIn::getFileLocation() const { return m_fileLocation; }
+const string& FileIn::getDelimiter() const { return m_delimiter; }
+*/

@@ -28,6 +28,7 @@ errorFileInNameMissing{"File input option has been used but the file name has "
     "not been specified."},
 errorFileInMissing{"The location of the input file to be processed must be "
     "provided. Please consult the documentation for additional information."},
+errorDlmSpecifiedAlready{"Multiple delimiters cannot be specified."},
 errorFileInNamedAlready{"Multiple input file names cannot be specified."},
 errorCalcNameInvalid{"An invalid function name has been specified. Please "
     "consult the documentation."},
