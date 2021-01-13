@@ -103,24 +103,38 @@ m_printDataP{nullptr} {
         else { throw invalid_argument(errorInvalidValue); }
     }
 }
+
+/*
+ * Check all the argument types, mainly ensuring that no necessary arguments are
+ * left empty. Also, read the input file, create the column vectors and
+ * populate them. All the called methods belong to Args class of CmdArgs
+ * namespace, which in turn may or may not call the ColData namespace methods.
+ */
 void Args::process() {
+    // Mandatory argument members (types)
     if (!m_delimiterP) { m_delimiterP = new Delimiter(); }
 
     if (!m_fileInP) { throw invalid_argument(errorFileInMissing); }
     m_fileInP->process(m_delimiterP->getDelimiter());
 
+    if (!m_calcP && (m_columnP || m_timestepP || m_rowP || m_fileOutP)) {
+        m_calcP = new Calc();
+        m_calcP->process();
+    }
+
     if (!m_columnP) { m_columnP = new Column(); }
     m_columnP->process();
 
-    if (!m_calcP && (m_columnP || m_timestepP || m_rowP || m_fileOutP)) {
-        m_calcP = new Calc();
-    }
-    m_calcP->process();
+    // Optional argument members (types)
+    if (m_fileOutP) { m_fileOutP->process(m_fileInP->getFileLocation()); }
 
     if (m_printDataP) { m_printDataP->process(); }
-
-    if (m_fileOutP) { m_fileOutP->process(m_fileInP->getFileLocation()); }
 }
+
+/*
+ * Perform the calculations and output the results in the requested format. All
+ * the called methods belong to ColData namespace.
+ */
 void Args::output() {
     ColData::printColNames();
 
@@ -183,7 +197,7 @@ void FileIn::process(const string& delimiter) {
 const string& FileIn::getFileLocation() const { return m_fileLocation; }
 
 //----------------------------------------------------------------------------//
-//***************************** CmdArgs::Calc *****************************//
+//****************************** CmdArgs::Calc *******************************//
 //----------------------------------------------------------------------------//
 
 Calc::Calc(int c, int argC, const vector<string>& argV) {
@@ -235,6 +249,7 @@ void Column::setColInputSets(int c, int argC, const vector<string>& argV) {
     }
 }
 void Column::process() {
+    // If no number or name is entered after option flag, select all columns
     if (m_intInputColSet.empty() && m_strInputColSet.empty()) {
         for (ColData::DoubleV* dVP : ColData::DoubleV::getSetP()) {
             m_colSet.push_back(dVP->getColNo());
@@ -245,11 +260,11 @@ void Column::process() {
         for (ColData::IntV* iVP : ColData::IntV::getSetP()) {
             bool colExists{0};
             for (int intInput : m_intInputColSet) {
-                colExists = intInput == iVP->getColNo();
+                colExists = (intInput == iVP->getColNo());
             }
             if (!colExists) {
                 for (string& strInput : m_strInputColSet) {
-                    colExists = strInput == iVP->getColName();
+                    colExists = (strInput == iVP->getColName());
                 }
             }
             if (colExists) { throw invalid_argument(errorColIsInt); }
@@ -282,7 +297,6 @@ const vector<int>& Column::getIntInputColSet() const {
 const vector<string>& Column::getStrInputColSet() const {
     return m_strInputColSet;
 }
-
 
 //----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileOut *****************************//

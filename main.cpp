@@ -7,11 +7,12 @@
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
  * @brief       A utility program for loading, writing and performing
- *              calculations  on column data in comma or space delimited files.
+ *              calculations on column data in comma or space delimited files.
  *              This program has been written primarily for timestep column
  *              data obtained from solvers used widely in computational fluid
  *              dynamics, it can be used for any data file having the correct
- *              formatting.
+ *              formatting. The calculations can only be performed for the
+ *              non-integer columns.
  */
 
 #include "cmdArgs.h"

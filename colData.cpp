@@ -331,7 +331,7 @@ void ColData::createVectors(const vector<string>& colNames) {
  */
 void ColData::populateVectors(ifstream& iFile, const string& dlm,
         const Delimitation dataDlmType, const streampos dataLinePos) {
-    size_t dlmLen{dlm.length()}, pos{0}, lineNo{0};
+    size_t pos{0}, lineNo{0}, dlmLen{dlm.length()};
     int colTotal{IntV::getTotal() + DoubleV::getTotal()};
     string line;
     vector<IntV*> iVSetP{IntV::getSetP()};
@@ -403,6 +403,7 @@ void ColData::loadData(const string& fileName, const string& dlm) {
     ifstream iFile{fileName};
 
     if (!iFile) { throw runtime_error(errorInputFile); }
+    else { cout << "File found. Program initiated." << std::flush; }
     iFile.setf(ios_base::scientific);
     iFile.precision(numeric_limits<double>::max_digits10);
 
@@ -411,13 +412,15 @@ void ColData::loadData(const string& fileName, const string& dlm) {
     tie(colTotal, colNames) = identifyColumnHeaders(
         headerLine, dlm, headerDlmType);
     dataDlmType = parseColumnData(iFile, dlm, dataLinePos);
+    cout << "\rParsing column data in progress..." << std::flush;
     classifyColumns(iFile, dlm, dataDlmType, dataLinePos, colTotal);
     createVectors(colNames);
+    cout << "\rStoring column data in progress..." << std::flush;
     populateVectors(iFile, dlm, dataDlmType, dataLinePos);
-
     iFile.close();
 
-    cout << "\nTotal columns =\t\t" << colTotal;
+    cout << '\r' << string(34, ' ') << "\n" << std::flush;
+    cout << "Total columns =\t\t" << colTotal;
     cout << "\n" << "Integer columns:\t";
     for (int c : IntV::getColNoSet()) { cout << c << ", "; }
     cout << "\n" << "Double columns:\t\t";

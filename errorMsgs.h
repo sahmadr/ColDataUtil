@@ -48,7 +48,8 @@ errorColNameInt{"Integer vector column name repeated. Please change one of the "
 errorHeaderFormatIncorrect{"An incorrect format has been used for the header "
     "line in the file."},
 errorDlmFormatIncorrect{"An incorrect delimiter has been specified OR an "
-    "incorrect data format has been used in the file. "},
+    "incorrect data format has been used in the file. The size of the columns "
+    "do not match."},
 errorHeaderDlmTypeUndefined{"The delimiter type of header was undefined. This "
     "could be due to an incorrect formatting of the header line. Please report "
     "this issue. Thank you."},
