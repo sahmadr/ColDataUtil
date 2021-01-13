@@ -26,10 +26,10 @@ m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
 m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr}, m_columnP{nullptr},
 m_rowP{nullptr}, m_timestepP{nullptr}, m_fileOutP{nullptr},
 m_printDataP{nullptr} {
-    if (argc<=1) { throw std::logic_error(errorNoArguments); }
+    if (argc<=1) { throw logic_error(errorNoArguments); }
     for (s_c=1; s_c<m_argc; ++s_c) {
         if (m_argv[s_c][0] == '-') {
-            std::unordered_map<string, Option>::const_iterator
+            unordered_map<string, Option>::const_iterator
                 mapIt{mapStrToOption.find(m_argv[s_c])};
             if (mapIt != mapStrToOption.end()) {
                 switch (mapIt->second) {
@@ -46,7 +46,7 @@ m_printDataP{nullptr} {
                         else { throw invalid_argument(errorFileInNamedAlready);}
                         break;
                     case Option::function:
-                        cout << "Found key = function" << std::endl;
+                        cout << "Found key = function" << endl;
                         if (!m_calcP) {
                             m_calcP = new Calc(s_c, m_argc, m_argv);
                         }
@@ -55,24 +55,32 @@ m_printDataP{nullptr} {
                         }
                         break;
                     case Option::column:
-                        cout << "Found key = column" << std::endl;
+                        cout << "Found key = column" << endl;
                         if (!m_columnP) {
                             m_columnP = new Column(s_c, m_argc, m_argv);
                         }
                         else { m_columnP->setColInputSets(s_c, m_argc, m_argv);}
                         break;
                     case Option::row:
-                        cout << "Found key = row" << std::endl;
+                        cout << "Found key = row" << endl;
                         if (!m_rowP) {
+                            m_rowP = new Row(s_c, m_argc, m_argv);
+                        }
+                        else if (std::get<1>(m_rowP->getRowRange()) == 0) {
+                            m_rowP->setRowEnd(s_c, m_argc, m_argv);
+                        }
+                        else {
+                            throw invalid_argument(errorRowsAlreadySpecified);
                         }
                         break;
                     case Option::timestep:
-                        cout << "Found key = timestep" << std::endl;
+                        cout << "Found key = timestep" << endl;
                         if (!m_timestepP) {
+                            m_timestepP = new Timestep(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::fileOut:
-                        cout << "Found key = fileOut" << std::endl;
+                        cout << "Found key = fileOut" << endl;
                         if (!m_fileOutP) {
                             m_fileOutP = new FileOut(s_c, m_argc, m_argv);
                         }
@@ -81,16 +89,16 @@ m_printDataP{nullptr} {
                         }
                         break;
                     case Option::printData:
-                        cout << "Found key = printData" << std::endl;
+                        cout << "Found key = printData" << endl;
                         if (!m_printDataP) {
                             m_printDataP = new PrintData(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::help:
-                        cout << "Found key = help" << std::endl;
+                        cout << "Found key = help" << endl;
                         break;
                     case Option::version:
-                        cout << "Found key = version" << std::endl;
+                        cout << "Found key = version" << endl;
                         break;
                 }
             }
@@ -106,9 +114,10 @@ m_printDataP{nullptr} {
 
 /*
  * Check all the argument types, mainly ensuring that no necessary arguments are
- * left empty. Also, read the input file, create the column vectors and
- * populate them. All the called methods belong to Args class of CmdArgs
- * namespace, which in turn may or may not call the ColData namespace methods.
+ * left empty and that the specified arguments are valid, especially columns and
+ * rows. Also, read the input file, create the column vectors and populate them.
+ * All the called methods belong to Args class of CmdArgs namespace, which in
+ * turn may or may not call the ColData namespace methods.
  */
 void Args::process() {
     // Mandatory argument members (types)
@@ -125,10 +134,22 @@ void Args::process() {
     if (!m_columnP) { m_columnP = new Column(); }
     m_columnP->process();
 
+    if (m_timestepP && m_rowP) {
+        throw logic_error(errorRowTimestepConflict);
+    }
+    else if (m_timestepP) {
+        //m_timestepP->process();
+    }
+    else {
+        if (!m_rowP) {
+            m_rowP = new Row();
+        }
+        m_rowP->process();
+    }
+
     // Optional argument members (types)
     if (m_fileOutP) { m_fileOutP->process(m_fileInP->getFileLocation()); }
-
-    if (m_printDataP) { m_printDataP->process(); }
+    // No processing needed for m_printDataP
 }
 
 /*
@@ -244,7 +265,7 @@ void Column::setColInputSets(int c, int argC, const vector<string>& argV) {
         for (size_t i=0; i<inputStr.length(); ++i) {
             if (!isdigit(inputStr[i])) { inputIsInteger = false; }
         }
-        if (inputIsInteger) { m_intInputColSet.push_back(std::stoi(inputStr)); }
+        if (inputIsInteger) { m_intInputColSet.push_back(stoi(inputStr)); }
         else { m_strInputColSet.push_back(inputStr); }
     }
 }
@@ -299,6 +320,80 @@ const vector<string>& Column::getStrInputColSet() const {
 }
 
 //----------------------------------------------------------------------------//
+//******************************* CmdArgs::Row *******************************//
+//----------------------------------------------------------------------------//
+
+Row::Row(int c, int argC, const vector<string>& argV) {
+    if (c+1 < argC && argV[c+1][0] != '-') {
+        if (c+2 < argC && argV[c+2][0] != '-') {
+            if (stoi(argV[c+1]) < 0 || stoi(argV[c+2]) <= 0){
+                throw invalid_argument(errorRowRangeInvalid);
+            }
+            m_rowBgn = stoi(argV[c+1]),
+            m_rowEnd = stoi(argV[c+2]);
+            Args::setCount(c+2);
+        }
+        else {
+            if (stoi(argV[c+1]) < 0) {
+                throw invalid_argument(errorRowRangeInvalid);
+            }
+            m_rowBgn = stoi(argV[Args::setCount(++c)]);
+        }
+    }
+}
+void Row::setRowEnd(int c, int argC, const vector<string>& argV) {
+    if (c+1 < argC && argV[c+1][0] != '-') {
+        if (stoi(argV[c+1]) <= 0) {
+            throw invalid_argument(errorRowRangeInvalid);
+        }
+        m_rowEnd = stoi(argV[Args::setCount(++c)]);
+    }
+}
+void Row::process() {
+    if (m_rowEnd == 0) {
+        m_rowEnd = ColData::DoubleV::getOneP(0)->getData().size();
+    }
+    else if (m_rowEnd > ColData::DoubleV::getOneP(0)->getData().size()
+            || (m_rowEnd <= m_rowBgn)) {
+        throw invalid_argument(errorRowRangeInvalid);
+    }
+    cout << "rowBgn = " << m_rowBgn << endl;
+    cout << "rowEnd = " << m_rowEnd << endl;
+}
+const std::tuple<size_t, size_t> Row::getRowRange() const {
+    return {m_rowBgn, m_rowEnd};
+}
+
+//----------------------------------------------------------------------------//
+//**************************** CmdArgs::Timestep *****************************//
+//----------------------------------------------------------------------------//
+
+Timestep::Timestep(int c, int argC, const vector<string>& argV) {
+    if (c+1 < argC && argV[c+1][0] != '-') {
+        if (c+2 < argC && argV[c+2][0] != '-') {
+            if (stoi(argV[c+1]) < 0 || stoi(argV[c+2]) <= 0){
+                throw invalid_argument(errorRowRangeInvalid);
+            }
+            m_timestepBgn = stoi(argV[c+1]),
+            m_timestepEnd = stoi(argV[c+2]);
+            Args::setCount(c+2);
+        }
+        else { m_timestepBgn = stoi(argV[Args::setCount(++c)]); }
+    }
+}
+void Timestep::process() {
+    if (m_timestepEnd == 0) {
+        // m_timestepEnd = ColData::DoubleV::getOneP(0)->getData().size();
+    }
+    else if (m_timestepEnd > ColData::DoubleV::getOneP(0)->getData().size()
+            || (m_timestepEnd <= m_timestepBgn)) {
+        throw invalid_argument(errorRowRangeInvalid);
+    }
+    cout << "timestepBgn = " << m_timestepBgn << endl;
+    cout << "timestepEnd = " << m_timestepEnd << endl;
+}
+
+//----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileOut *****************************//
 //----------------------------------------------------------------------------//
 
@@ -330,27 +425,7 @@ PrintData::PrintData(int c, int argC, const vector<string>& argV) {
         m_delimiter = argV[Args::setCount(++c)];
     }
 }
-void PrintData::process() {
-    // if (m_delimiter.length() > delimLenLimit) {
-    //     std::cerr << warnDelimiterTooLong << endl;
-    // }
-}
 const string& PrintData::getDelimiter() const { return m_delimiter; }
-
-//----------------------------------------------------------------------------//
-//******************************* CmdArgs::Row *******************************//
-//----------------------------------------------------------------------------//
-
-Row::Row(int c, int argC, const vector<string>& argV) {
-    if (c+1 < argC && argV[c+1][0] != '-') {
-        if (c+2 < argC && argV[c+2][0] != '-') {
-            m_rowBgn = std::stoi(argV[c+1]),
-            m_rowEnd = std::stoi(argV[c+2]);
-            Args::setCount(c+2);
-        }
-        else { m_rowBgn = stoi(argV[Args::setCount(++c)]); }
-    }
-}
 
 //----------------------------------------------------------------------------//
 //**************************** CmdArgs::Timestep *****************************//

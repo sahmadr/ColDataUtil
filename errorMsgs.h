@@ -38,8 +38,6 @@ errorColNamesInvalid{"None of the specified columns match the columns in the "
     "input file."},
 errorFileOutNameMissing{"File output option has been used but the file name "
     "has not been specified."},
-generalErrorMessage{"Please contact the developer if further assistance is "
-    "required. Thank you."},
 
 errorColNameDouble{"Double vector column name repeated. Please change one of "
     "the column names."},
@@ -58,13 +56,19 @@ errorDataFormatIncorrect{"An incorrect format has been used for the numeric "
 errorColNameAbsent{"Requested column name not found."},
 errorColNoAbsent{"Requested column number not found."},
 errorColAbsent{"Requested column not found."},
+errorRowRangeInvalid{"Requested range of rows is invalid."},
+errorRowsAlreadySpecified{"Please specify only two values for the row option."},
+errorRowTimestepConflict{"The row option and the timestep option both have "
+    "been specified. Please choose only one of these options."},
 errorTimeStepTooSmall{"Invalid timestep specified. The specified timestep is "
     "less than the smallest found in the file."},
 errorTimeStepTooLarge{"Invalid timestep specified. The specified timestep is "
     "larger than the largest found in the file."},
 errorInputFile{"Input file could not be opened."},
-errorOutputFile{"Output file could not be opened."}
+errorOutputFile{"Output file could not be opened."},
 
+generalErrorMessage{"\nPlease contact the developer if further assistance is "
+    "required. Thank you."}
 ;
 
 #endif

@@ -131,6 +131,45 @@ class CmdArgs::Column {
 };
 
 //----------------------------------------------------------------------------//
+//******************************* CmdArgs::Row *******************************//
+//----------------------------------------------------------------------------//
+
+class CmdArgs::Row {
+  private:
+    size_t  m_rowBgn{0};
+    size_t  m_rowEnd{0};
+
+    Row(const Row&) = delete;
+    Row& operator=(const Row&) = delete;
+
+  public:
+    explicit Row() = default;
+    explicit Row(int c, int argC, const vector<string>& argV);
+    void process();
+    void setRowEnd(int c, int argC, const vector<string>& argV);
+    const tuple<size_t, size_t> getRowRange() const;
+};
+
+//----------------------------------------------------------------------------//
+//**************************** CmdArgs::Timestep *****************************//
+//----------------------------------------------------------------------------//
+
+class CmdArgs::Timestep {
+  private:
+    size_t  m_timestepBgn{0};
+    size_t  m_timestepEnd{0};
+
+    Timestep() = delete;
+    Timestep(const Timestep&) = delete;
+    Timestep& operator=(const Timestep&) = delete;
+
+  public:
+    explicit Timestep(int c, int argC, const vector<string>& argV);
+    void process();
+    const tuple<size_t, size_t> getTimestepRange() const;
+};
+
+//----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileOut *****************************//
 //----------------------------------------------------------------------------//
 
@@ -163,27 +202,7 @@ class CmdArgs::PrintData {
 
   public:
     explicit PrintData(int c, int argC, const vector<string>& argV);
-    void process();
     const string& getDelimiter() const;
-};
-
-//----------------------------------------------------------------------------//
-//******************************* CmdArgs::Row *******************************//
-//----------------------------------------------------------------------------//
-
-class CmdArgs::Row {
-  private:
-    size_t  m_rowBgn{0};
-    size_t  m_rowEnd{0};
-
-    Row() = delete;
-    Row(const Row&) = delete;
-    Row& operator=(const Row&) = delete;
-
-  public:
-    explicit Row(int c, int argC, const vector<string>& argV);
-    void process();
-    const std::tuple<size_t, size_t> getRowRange() const;
 };
 
 //----------------------------------------------------------------------------//

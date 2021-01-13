@@ -15,6 +15,7 @@
  *              non-integer columns.
  */
 
+#include "namespaces.h"
 #include "cmdArgs.h"
 #include "errorMsgs.h"
 
@@ -24,19 +25,19 @@ int main(int argc, char* argv[]) {
         input.process();
         input.output();
     }
-    catch (const std::invalid_argument& exception) {
+    catch (const invalid_argument& exception) {
         std::cerr
             << "\n\nERROR! Invalid argument: " << exception.what()
             << generalErrorMessage << std::endl;
         return 1;
     }
-    catch (const std::logic_error& exception) {
+    catch (const logic_error& exception) {
         std::cerr
             << "Logic error: " << exception.what()
             << generalErrorMessage << std::endl;
         return 1;
     }
-    catch (const std::runtime_error& exception) {
+    catch (const runtime_error& exception) {
         std::cerr
             << "\n\nERROR! Runtime error: " << exception.what()
             << generalErrorMessage << std::endl;

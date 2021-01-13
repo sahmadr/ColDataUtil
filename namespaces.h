@@ -29,9 +29,10 @@
 
 using   std::string, std::vector, std::set, std::tuple, std::unordered_map,
         std::numeric_limits, std::tie, std::ios_base,
-        std::cout, std::endl,
+        std::cout, std::endl, std::flush,
+        std::stoi, std::stod,
         std::ifstream, std::ofstream, std::getline, std::streampos,
-        std::runtime_error, std::invalid_argument;
+        std::invalid_argument, std::logic_error, std::runtime_error;
 
 using stringV = std::string_view;
 using calcType = double(*)(int, size_t, size_t);
@@ -43,8 +44,8 @@ enum class Delimitation { spaced, delimited, spacedAndDelimited };
 //----------------------------------------------------------------------------//
 
 namespace ColData {
-    inline constexpr int maxRowsToCheckInt = 1000;
-    inline constexpr int delimiterLenLimit = 3;
+    // inline constexpr int maxRowsToCheckInt = 1000;
+    // inline constexpr int delimiterLenLimit = 3;
     class DoubleV;
     class IntV;
     bool isNumberLine(stringV lineStr, string dlm);
@@ -73,11 +74,9 @@ namespace ColData {
         const string& timeStepsStr, const string& fncName, double value);
     void filer(const string& fileName, const string& colName,
         const string& timeStepsStr, const string& fncName, double value);
-    void outputValue(calcType calc,
-        const int column, const size_t timestepBgn=1,
-        const size_t timestepEnd=0);
-    void outputValue(const string& fileName,
-        calcType calc, const int column,
+    void outputValue(calcType calc, const int column,
+        const size_t timestepBgn=1, const size_t timestepEnd=0);
+    void outputValue(const string& fileName, calcType calc, const int column,
         const size_t timestepBgn=1, const size_t timestepEnd=0);
     // const string& rowTimestepsStrMaker
 }
