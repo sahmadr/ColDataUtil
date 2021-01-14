@@ -28,8 +28,8 @@
 #include <cmath>
 
 using   std::string, std::vector, std::set, std::tuple, std::unordered_map,
-        std::numeric_limits, std::tie, std::ios_base,
-        std::cout, std::endl, std::flush,
+        std::numeric_limits, std::tie, std::ios_base, std::to_string,
+        std::cout, std::endl, std::flush, std::setw, std::left, std::right,
         std::stoi, std::stod,
         std::ifstream, std::ofstream, std::getline, std::streampos,
         std::invalid_argument, std::logic_error, std::runtime_error;
@@ -37,7 +37,7 @@ using   std::string, std::vector, std::set, std::tuple, std::unordered_map,
 using stringV = std::string_view;
 using calcType = double(*)(int, size_t, size_t);
 
-enum class Delimitation { spaced, delimited, spacedAndDelimited };
+enum class Delimitation { undefined, spaced, delimited, spacedAndDelimited };
 
 //----------------------------------------------------------------------------//
 //**************************** ColData Namespace *****************************//
@@ -63,21 +63,21 @@ namespace ColData {
     void createVectors(const vector<string>& colNames);
     void populateVectors(ifstream& iFile, const string& dlm,
         const Delimitation dataDlmType, const streampos dataLinePos);
-    void loadData(const string& fileName, const string& dlm);
+    tuple<int, Delimitation> loadData(const string& fileName,
+        const string& dlm);
     void printAvailableTimestepRange();
-    void printColNames();
+    void printColNames(int dataColtTotal, Delimitation dataDlmType);
     void printData(string dlm=",");
     void fileData(string fileName, string dlm);
     const tuple<size_t, size_t> returnRows(const int column,
         const size_t timestepBgn, const size_t timestepEnd);
-    void printer(const string& colName,
-        const string& timeStepsStr, const string& fncName, double value);
+    void printer(const string& fncName, double value);
     void filer(const string& fileName, const string& colName,
-        const string& timeStepsStr, const string& fncName, double value);
+        const string& outputStr, const string& fncName, double value);
     void outputValue(calcType calc, const int column,
-        const size_t timestepBgn=1, const size_t timestepEnd=0);
+        const tuple<size_t, size_t> rowRange);
     void outputValue(const string& fileName, calcType calc, const int column,
-        const size_t timestepBgn=1, const size_t timestepEnd=0);
+        const tuple<size_t, size_t> rowRange);
     // const string& rowTimestepsStrMaker
 }
 
@@ -103,8 +103,6 @@ namespace CmdArgs {
     class Version;
     extern const unordered_map<string, Option> mapStrToOption;
     extern const unordered_map<string, CalcId> mapStrToCalc;
-    template<typename T> const std::unordered_map<CalcId, calcType>
-        mapCalcIdToCalc;
 }
 
 //----------------------------------------------------------------------------//
@@ -112,8 +110,7 @@ namespace CmdArgs {
 //----------------------------------------------------------------------------//
 
 namespace CalcFnc {
-    template<typename T> const std::unordered_map<calcType, string>
-        mapCalcToStr;
+    template<typename T> const unordered_map<calcType, string> mapCalcToStr;
     template<typename T> double findMax(const T column,
         const size_t rowBgn, const size_t rowEnd);
     template<typename T> double findMin(const T column,
@@ -128,6 +125,18 @@ namespace CalcFnc {
         const size_t rowBgn, const size_t rowEnd);
     template<typename T> double findCubicMean(const T column,
         const size_t rowBgn, const size_t rowEnd);
+}
+
+//----------------------------------------------------------------------------//
+//***************************** Output Namespace *****************************//
+//----------------------------------------------------------------------------//
+
+namespace Output {
+    void output(CmdArgs::Args* argsP);
+    void printer(CmdArgs::Args* argsP);
+    void filer(CmdArgs::Args* argsP);
+    template<typename T> const unordered_map<CmdArgs::CalcId, calcType>
+        mapCalcIdToCalc;
 }
 
 #endif

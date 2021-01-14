@@ -28,10 +28,14 @@ helpIntro{
 "be performed for the non-integer columns.\n"
 },
 helpGeneral{
-"This program requires an input data file to work. The filename may be\n"
-"entered as the first argument. Otherwise, the filename must be\n"
-"preceded by an option flag -i or --input if it is given after other\n"
-"options.\n"
+"This program requires a correctly formatted input data file to work.\n\n"
+"The filename may be entered as the first argument. Otherwise, the\n"
+"filename must be preceded by an option flag -i or --input if it is\n"
+"given after other options.\n\n"
+"By default, a whitespace- or comma-delimited file is expected.\n"
+"If your input file includes a different delimiter, it may be\n"
+"specified using --separator option.\n"
+"The numbering of columns and rows follows zero-based indexing.\n\n"
 }
 
 ;

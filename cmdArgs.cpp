@@ -22,10 +22,11 @@ using namespace CmdArgs;
 //----------------------------------------------------------------------------//
 
 Args::Args(int argc, char* argv[]) :
-m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
-m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr}, m_columnP{nullptr},
-m_rowP{nullptr}, m_timestepP{nullptr}, m_fileOutP{nullptr},
-m_printDataP{nullptr} {
+  m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
+  m_dataDlmType{Delimitation::undefined}, m_dataColTotal{0},
+  m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr}, m_columnP{nullptr},
+  m_rowP{nullptr}, m_timestepP{nullptr}, m_fileOutP{nullptr},
+  m_printDataP{nullptr} {
     if (argc<=1) { throw logic_error(errorNoArguments); }
     for (s_c=1; s_c<m_argc; ++s_c) {
         if (m_argv[s_c][0] == '-') {
@@ -85,7 +86,7 @@ m_printDataP{nullptr} {
                             m_fileOutP = new FileOut(s_c, m_argc, m_argv);
                         }
                         else {
-                            m_fileOutP->setFileLocationSet(s_c, m_argc, m_argv);
+                            m_fileOutP->setFileLocSet(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::printData:
@@ -124,7 +125,8 @@ void Args::process() {
     if (!m_delimiterP) { m_delimiterP = new Delimiter(); }
 
     if (!m_fileInP) { throw invalid_argument(errorFileInMissing); }
-    m_fileInP->process(m_delimiterP->getDelimiter());
+    tie(m_dataColTotal, m_dataDlmType) =
+        m_fileInP->process(m_delimiterP->getDelimiter());
 
     if (!m_calcP && (m_columnP || m_timestepP || m_rowP || m_fileOutP)) {
         m_calcP = new Calc();
@@ -152,43 +154,23 @@ void Args::process() {
     // No processing needed for m_printDataP
 }
 
-/*
- * Perform the calculations and output the results in the requested format. All
- * the called methods belong to ColData namespace.
- */
-void Args::output() {
-    ColData::printColNames();
+int Args::setCount(int newCount)                { return(s_c = newCount); }
+int Args::getCount()                            { return s_c; }
+int Args::getArgC() const                       { return m_argc; }
+const vector<string>& Args::getArgV() const     { return m_argv; }
+const string Args::getProgramName() const       { return m_programName; }
+Delimitation Args::getDataDlmType() const       { return m_dataDlmType; }
+int Args::getDataColTotal() const               { return m_dataColTotal; }
 
-    if (m_printDataP) { ColData::printData(m_printDataP->getDelimiter()); }
+const Delimiter* Args::getDelimiterP() const    { return m_delimiterP; }
+const FileIn* Args::getFileInP() const          { return m_fileInP; }
+const Calc* Args::getCalcP() const              { return m_calcP; }
+const Column* Args::getColumnP() const          { return m_columnP; }
+const Row* Args::getRowP() const                { return m_rowP; }
+const Timestep* Args::getTimestepP() const      { return m_timestepP; }
+const FileOut* Args::getFileOutP() const        { return m_fileOutP; }
+const PrintData* Args::getPrintDataP() const    { return m_printDataP; }
 
-    if (m_calcP) {
-        if (!m_fileOutP) {
-            for (const int colNo : m_columnP->getColSet()) {
-                for (const CalcId id : m_calcP->getCalcIdSet()) {
-                    ColData::outputValue(
-                        mapCalcIdToCalc<int>.at(id), colNo);
-                }
-            }
-        }
-        else {
-            for (const string& fileOut : m_fileOutP->getFileLocationSet()) {
-                for (const int colNo : m_columnP->getColSet()) {
-                    for (const CalcId id : m_calcP->getCalcIdSet()) {
-                        ColData::outputValue(fileOut,
-                            mapCalcIdToCalc<int>.at(id), colNo);
-                    }
-                }
-                cout<< "The output has been written to the file \""
-                    << fileOut << "\"." << std::endl;
-            }
-        }
-    }
-}
-int Args::setCount(int newCount)            { return(s_c = newCount); }
-int Args::getCount()                        { return s_c; }
-int Args::getArgC() const                   { return m_argc; }
-const vector<string>& Args::getArgV() const { return m_argv; }
-const string Args::getProgramName() const   { return m_programName; }
 
 //----------------------------------------------------------------------------//
 //**************************** CmdArgs::Delimiter ****************************//
@@ -212,8 +194,8 @@ FileIn::FileIn(int c, int argC, const vector<string>& argV) {
 FileIn::FileIn(const vector<string>& argV) {
     m_fileLocation = argV[Args::setCount(1)];
 }
-void FileIn::process(const string& delimiter) {
-    ColData::loadData(m_fileLocation, delimiter);
+tuple<int, Delimitation> FileIn::process(const string& dlm) {
+    return ColData::loadData(m_fileLocation, dlm);
 }
 const string& FileIn::getFileLocation() const { return m_fileLocation; }
 
@@ -273,7 +255,7 @@ void Column::process() {
     // If no number or name is entered after option flag, select all columns
     if (m_intInputColSet.empty() && m_strInputColSet.empty()) {
         for (ColData::DoubleV* dVP : ColData::DoubleV::getSetP()) {
-            m_colSet.push_back(dVP->getColNo());
+            m_doubleColSet.push_back(dVP->getColNo());
         }
     }
     else {
@@ -301,16 +283,16 @@ void Column::process() {
                     colExists = strInput == dVP->getColName();
                 }
             }
-            if (colExists) { m_colSet.push_back(dVP->getColNo()); }
+            if (colExists) { m_doubleColSet.push_back(dVP->getColNo()); }
         }
         // If the none of the inputs match any column in the given file
-        if (m_colSet.empty()) {
+        if (m_doubleColSet.empty()) {
             throw invalid_argument(errorColNamesInvalid);
         }
     }
 }
-const vector<int>& Column::getColSet() const {
-    return m_colSet;
+const vector<int>& Column::getDoubleColSet() const {
+    return m_doubleColSet;
 }
 const vector<int>& Column::getIntInputColSet() const {
     return m_intInputColSet;
@@ -351,16 +333,16 @@ void Row::setRowEnd(int c, int argC, const vector<string>& argV) {
 }
 void Row::process() {
     if (m_rowEnd == 0) {
-        m_rowEnd = ColData::DoubleV::getOneP(0)->getData().size();
+        m_rowEnd = ColData::DoubleV::getOneP(0)->getData().size() - 1;
     }
-    else if (m_rowEnd > ColData::DoubleV::getOneP(0)->getData().size()
+    else if (m_rowEnd > (ColData::DoubleV::getOneP(0)->getData().size() - 1)
             || (m_rowEnd <= m_rowBgn)) {
         throw invalid_argument(errorRowRangeInvalid);
     }
     cout << "rowBgn = " << m_rowBgn << endl;
     cout << "rowEnd = " << m_rowEnd << endl;
 }
-const std::tuple<size_t, size_t> Row::getRowRange() const {
+const tuple<size_t, size_t> Row::getRowRange() const {
     return {m_rowBgn, m_rowEnd};
 }
 
@@ -398,22 +380,22 @@ void Timestep::process() {
 //----------------------------------------------------------------------------//
 
 FileOut::FileOut(int c, int argC, const vector<string>& argV) {
-    setFileLocationSet(c, argC, argV);
+    setFileLocSet(c, argC, argV);
 }
-void FileOut::setFileLocationSet(int c, int argC, const vector<string>& argV) {
+void FileOut::setFileLocSet(int c, int argC, const vector<string>& argV) {
     while (c+1 < argC && argV[c+1][0] != '-') {
         Args::setCount(++c);
-        m_fileLocationSet.push_back(argV[c]);
+        m_fileLocSet.push_back(argV[c]);
     }
 }
 void FileOut::process(const string& fileInName) {
-    if (m_fileLocationSet.empty()) {
+    if (m_fileLocSet.empty()) {
         string fileOutName {fileInName + "_calc.csv"};
-        m_fileLocationSet.push_back(fileOutName);
+        m_fileLocSet.push_back(fileOutName);
     }
 }
-const vector<string> FileOut::getFileLocationSet() const {
-    return m_fileLocationSet;
+const vector<string> FileOut::getFileLocSet() const {
+    return m_fileLocSet;
 }
 
 //----------------------------------------------------------------------------//

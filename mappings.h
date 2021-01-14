@@ -75,15 +75,17 @@ inline const std::unordered_map<string, CalcId> CmdArgs::mapStrToCalc {
     {"cubic-avg",           CalcId::findCubicMean},
 };
 
-template<typename T>
-inline const std::unordered_map<CalcId, calcType> CmdArgs::mapCalcIdToCalc {
-    {CalcId::findMin,            CalcFnc::findMin},
-    {CalcId::findMax,            CalcFnc::findMax},
-    {CalcId::findAbsMin,         CalcFnc::findAbsMin},
-    {CalcId::findAbsMax,         CalcFnc::findAbsMax},
-    {CalcId::findMean,           CalcFnc::findMean},
-    {CalcId::findQuadraticMean,  CalcFnc::findQuadraticMean},
-    {CalcId::findCubicMean,      CalcFnc::findCubicMean}
+template<typename T> inline const unordered_map<CmdArgs::CalcId, calcType>
+        Output::mapCalcIdToCalc {
+// template<typename T>
+// inline const std::unordered_map<CalcId, calcType> CmdArgs::mapCalcIdToCalc {
+    {CmdArgs::CalcId::findMin,            CalcFnc::findMin},
+    {CmdArgs::CalcId::findMax,            CalcFnc::findMax},
+    {CmdArgs::CalcId::findAbsMin,         CalcFnc::findAbsMin},
+    {CmdArgs::CalcId::findAbsMax,         CalcFnc::findAbsMax},
+    {CmdArgs::CalcId::findMean,           CalcFnc::findMean},
+    {CmdArgs::CalcId::findQuadraticMean,  CalcFnc::findQuadraticMean},
+    {CmdArgs::CalcId::findCubicMean,      CalcFnc::findCubicMean}
 };
 
 // template<typename T>

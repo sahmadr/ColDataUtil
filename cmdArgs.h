@@ -28,6 +28,8 @@ class CmdArgs::Args {
     const int               m_argc;         // total number of arguments
     const vector<string>    m_argv;         // complete set of arguments
     const string            m_programName;  // program name
+    Delimitation            m_dataDlmType;  // data delimitation type
+    int                     m_dataColTotal; // total number of columns
     Delimiter*              m_delimiterP;   // delimiter
     FileIn*                 m_fileInP;      // file with data to be processed
     Calc*                   m_calcP;        // value functions to be calculated
@@ -44,12 +46,27 @@ class CmdArgs::Args {
   public:
     explicit Args(int argc, char* argv[]);
     void process();
-    void output();
+
     static int setCount(int newCount);
     static int getCount();
+
+    void setDataColTotal(int dataColTotal) { m_dataColTotal = dataColTotal; }
+    void setDataDlmType(Delimitation dataDlmType) {m_dataDlmType = dataDlmType;}
+
     int getArgC() const;
     const vector<string>& getArgV() const;
     const string getProgramName() const;
+    Delimitation getDataDlmType() const;
+    int getDataColTotal() const;
+
+    const Delimiter* getDelimiterP() const;
+    const FileIn* getFileInP() const;
+    const Calc* getCalcP() const;
+    const Column* getColumnP() const;
+    const Row* getRowP() const;
+    const Timestep* getTimestepP() const;
+    const FileOut* getFileOutP() const;
+    const PrintData* getPrintDataP() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -84,7 +101,7 @@ class CmdArgs::FileIn {
   public:
     explicit FileIn(int c, int argC, const vector<string>& argV);
     explicit FileIn(const vector<string>& argV);
-    void process(const string& delimiter);
+    tuple<int, Delimitation> process(const string& delimiter);
     const string& getFileLocation() const;
 };
 
@@ -115,7 +132,7 @@ class CmdArgs::Column {
   private:
     vector<int>     m_intInputColSet{};
     vector<string>  m_strInputColSet{};
-    vector<int>     m_colSet{};
+    vector<int>     m_doubleColSet{};
 
     Column(const Column&) = delete;
     Column& operator=(const Column&) = delete;
@@ -125,7 +142,7 @@ class CmdArgs::Column {
     explicit Column(int c, int argC, const vector<string>& argV);
     void setColInputSets(int c, int argC, const vector<string>& argV);
     void process();
-    const vector<int>& getColSet() const;
+    const vector<int>& getDoubleColSet() const;
     const vector<int>& getIntInputColSet() const;
     const vector<string>& getStrInputColSet() const;
 };
@@ -175,7 +192,7 @@ class CmdArgs::Timestep {
 
 class CmdArgs::FileOut {
   private:
-    vector<string>  m_fileLocationSet{};
+    vector<string>  m_fileLocSet{};
 
     FileOut() = delete;
     FileOut(const FileOut&) = delete;
@@ -183,9 +200,9 @@ class CmdArgs::FileOut {
 
   public:
     explicit FileOut(int c, int argC, const vector<string>& argV);
-    void setFileLocationSet(int c, int argC, const vector<string>& argV);
+    void setFileLocSet(int c, int argC, const vector<string>& argV);
     void process(const string& fileInName);
-    const vector<string> getFileLocationSet() const;
+    const vector<string> getFileLocSet() const;
 };
 
 //----------------------------------------------------------------------------//

@@ -17,13 +17,15 @@
 
 #include "namespaces.h"
 #include "cmdArgs.h"
+#include "output.h"
 #include "errorMsgs.h"
 
 int main(int argc, char* argv[]) {
     try {
         CmdArgs::Args input(argc, argv);
         input.process();
-        input.output();
+        Output::output(&input);
+        // input.output();
     }
     catch (const invalid_argument& exception) {
         std::cerr
