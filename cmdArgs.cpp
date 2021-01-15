@@ -383,17 +383,24 @@ FileOut::FileOut(int c, int argC, const vector<string>& argV) {
 void FileOut::setFileLocSet(int c, int argC, const vector<string>& argV) {
     while (c+1 < argC && argV[c+1][0] != '-') {
         Args::setCount(++c);
-        m_fileLocSet.push_back(argV[c]);
+        m_fileOutLocSet.push_back(argV[c]+".csv");
     }
 }
 void FileOut::process(const string& fileInName) {
-    if (m_fileLocSet.empty()) {
-        string fileOutName {fileInName + "_calc.csv"};
-        m_fileLocSet.push_back(fileOutName);
+    if (m_fileOutLocSet.empty()) {
+        string fileOutName;
+        size_t pos;
+        if ((pos = fileInName.find_last_of('.')) != string::npos) {
+            fileOutName = fileInName.substr(0, pos) + "_calc.csv";
+        }
+        else {
+            fileOutName = fileInName + "_calc.csv";
+        }
+        m_fileOutLocSet.push_back(fileOutName);
     }
 }
 const vector<string> FileOut::getFileLocSet() const {
-    return m_fileLocSet;
+    return m_fileOutLocSet;
 }
 
 //----------------------------------------------------------------------------//

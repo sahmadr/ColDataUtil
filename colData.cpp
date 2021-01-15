@@ -456,38 +456,6 @@ const tuple<size_t, size_t> ColData::returnRows(const int column,
     return {rowBgn, rowEnd};
 }
 
-/*
- * Perform the selected operation on the selected column and file the result.
- */
-void ColData::outputValue(const string& fileName, calcType calc,
-        const int column, const tuple<size_t, size_t> rowRange) {
-    vector<int> timesteps{IntV::getOneP(0)->getData()};
-    DoubleV* dVP{DoubleV::getOnePFromCol(column)};
-
-    size_t rowBgn, rowEnd;
-    tie(rowBgn, rowEnd) = rowRange;
-
-    string outputStr = "rows " + to_string(rowBgn) + " to " + to_string(rowEnd);
-
-    filer(fileName, dVP->getColName(), outputStr,
-            CalcFnc::mapCalcToStr<int>.at(calc), calc(column, rowBgn, rowEnd));
-}
-
-/*
- * Filer for ColData::outputValue.
- */
-void ColData::filer(const string& fileName, const string& colName,
-        const string& outputStr, const string& fncName, double value) {
-    ofstream oFile;
-    oFile.open(fileName, ios_base::app);
-    oFile.setf(ios_base::scientific);
-    oFile.precision(numeric_limits<double>::max_digits10);
-    if(!oFile) { throw runtime_error(errorOutputFile); }
-    oFile   << colName << "," << outputStr << "," << fncName << ","
-            << value << "," << endl;
-    oFile.close();
-}
-
 //----------------------------------------------------------------------------//
 //********************* Printing and filing loaded data **********************//
 //----------------------------------------------------------------------------//

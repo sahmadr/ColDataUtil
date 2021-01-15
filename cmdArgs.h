@@ -192,7 +192,7 @@ class CmdArgs::Timestep {
 
 class CmdArgs::FileOut {
   private:
-    vector<string>  m_fileLocSet{};
+    vector<string>  m_fileOutLocSet{};
 
     FileOut() = delete;
     FileOut(const FileOut&) = delete;

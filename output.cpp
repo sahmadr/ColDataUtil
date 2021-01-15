@@ -35,7 +35,7 @@ void Output::printInputDataInfo(int dataColTotal, Delimitation dataDlmType) {
         cout<< setw(3) << right << dVP->getColNo() << ". "
             << left << dVP->getColName() << '\n';
     }
-    cout<< '\n' << string(60, '=') << '\n';
+    cout<< '\n' << string(55, '=') << '\n';
 }
 
 /*
@@ -50,13 +50,18 @@ void Output::output(CmdArgs::Args* argsP) {
 
     if (argsP->getCalcP()) {
         if (!argsP->getFileOutP()) {
-            printer(argsP);
+            printer(argsP->getRowP()->getRowRange(),
+                    argsP->getColumnP()->getDoubleColSet(),
+                    argsP->getCalcP()->getCalcIdSet());
         }
         else {
             for (const string& fileOut : argsP->getFileOutP()->getFileLocSet()){
-                filer(argsP);
-                cout<< "The output has been written to the file \""
-                    << fileOut << "\"." << std::endl;
+                filer(fileOut,
+                      argsP->getRowP()->getRowRange(),
+                      argsP->getColumnP()->getDoubleColSet(),
+                      argsP->getCalcP()->getCalcIdSet());
+                cout<< "\nThe output has been written to \"" << fileOut << "\""
+                    << endl;
             }
         }
     }
@@ -66,73 +71,79 @@ void Output::output(CmdArgs::Args* argsP) {
  * Perform all the selected operations on all the selected columns and print the
  * results to the terminal.
  */
-void Output::printer(CmdArgs::Args* argsP) {
+void Output::printer(
+        const tuple<size_t, size_t> rowRange,
+        const vector<int>& doubleColSet,
+        const vector<CmdArgs::CalcId>& calcIdSet) {
     vector<int> timesteps{IntV::getOneP(0)->getData()};
     size_t rowBgn, rowEnd;
-    tuple<size_t, size_t> rowRange{argsP->getRowP()->getRowRange()};
     tie(rowBgn, rowEnd) = rowRange;
-
-    // Print heading
-    cout<< " Calculation results for rows " << to_string(rowBgn)
-        << " to " << to_string(rowEnd) << '\n' << string(60, '=') << '\n';
 
     // Set cout properties
     cout.setf(ios_base::scientific);
     cout.precision(numeric_limits<double>::max_digits10);
 
+    // Print heading
+    cout<< " Calculation results for "
+        << "rows " << to_string(rowBgn) << " to " << to_string(rowEnd) << '\n'
+        << string(55, '=') << '\n';
+
     // Print calculations
-    for (const int colNo : argsP->getColumnP()->getDoubleColSet()) {
-        DoubleV* dVP{DoubleV::getOnePFromCol(colNo)};
+    for (const int colNo : doubleColSet) {
+
         // Print subheading
-        cout<< "\n " << dVP->getColName() << '\n' << string(30, '-') << '\n';
-        for (const CmdArgs::CalcId id : argsP->getCalcP()->getCalcIdSet()) {
+        cout<< "\n " << DoubleV::getOnePFromCol(colNo)->getColName() << '\n'
+            << string(55, '-') << '\n';
+
+        // Print calculation results
+        for (const CmdArgs::CalcId id : calcIdSet) {
             calcType calc{mapCalcIdToCalc<int>.at(id)};
-            // Print calculations
             cout<< ' ' << left << setw(22)
                 << CalcFnc::mapCalcToStr<int>.at(calc)
-                << " = " << calc(colNo, rowBgn, rowEnd) << endl;
+                << " = " << calc(colNo, rowBgn, rowEnd) << '\n';
         }
     }
+    cout << endl;
 }
 
 /*
  * Perform all the selected operations on all the selected columns and print the
  * results to the terminal.
  */
-void Output::filer(CmdArgs::Args* argsP) {
+void Output::filer(const string& fileOutStr,
+        const tuple<size_t, size_t> rowRange,
+        const vector<int>& doubleColSet,
+        const vector<CmdArgs::CalcId>& calcIdSet) {
     vector<int> timesteps{IntV::getOneP(0)->getData()};
-
     size_t rowBgn, rowEnd;
-    tuple<size_t, size_t> rowRange{argsP->getRowP()->getRowRange()};
     tie(rowBgn, rowEnd) = rowRange;
 
-    string outputStr = "rows " + to_string(rowBgn) + " to " + to_string(rowEnd);
+    // Open file and set properties
+    ofstream fOut;
+    fOut.open(fileOutStr, ios_base::app);
+    if(!fOut) { throw runtime_error(errorOutputFile); }
+    fOut.setf(ios_base::scientific);
+    fOut.precision(numeric_limits<double>::max_digits10);
 
-    // << std::setw(25) << colName
-    // << std::setw(25) << outputStr
+    // File heading
+    fOut<< "\nCalculation results for "
+        << "rows " << to_string(rowBgn) << " to " << to_string(rowEnd)
+        << '\n' << string(70, '`') << '\n';
 
-    // Print heading
-    cout<< " Calculation results for rows "
-            << to_string(rowBgn) << " to " << to_string(rowEnd) << '\n'
-            << string(60, '=') << '\n';
+    // File subheadings
+    fOut << "Calculations\\Columns,";
+    for (const int colNo : doubleColSet) {
+        fOut<< DoubleV::getOnePFromCol(colNo)->getColName() << ',';
+    }
 
-    // Print calculations
-    cout.setf(ios_base::scientific);
-    cout.precision(numeric_limits<double>::max_digits10);
-
-    // printer(dVP->getColName(), outputStr, CalcFnc::mapCalcToStr<int>.at(calc),
-    //         calc(column, rowBgn, rowEnd));
-
-    for (const int colNo : argsP->getColumnP()->getDoubleColSet()) {
-        DoubleV* dVP{DoubleV::getOnePFromCol(colNo)};
-        // Print subheading
-        cout<< "\n " << dVP->getColName() << ":\n" << string(30, '-') << '\n';
-        for (const CmdArgs::CalcId id : argsP->getCalcP()->getCalcIdSet()) {
-            calcType calc{mapCalcIdToCalc<int>.at(id)};
-            // Print calculations
-            cout<< ' ' << left << setw(22)
-                << CalcFnc::mapCalcToStr<int>.at(calc)
-                << " = " << calc(colNo, rowBgn, rowEnd) << endl;
+    // File calculation results
+    for (const CmdArgs::CalcId id : calcIdSet) {
+        calcType calc{mapCalcIdToCalc<int>.at(id)};
+        fOut << '\n' << CalcFnc::mapCalcToStr<int>.at(calc) << ',';
+        for (const int colNo : doubleColSet) {
+            fOut << calc(colNo, rowBgn, rowEnd) << ',';
         }
     }
+    fOut << '\n';
+    fOut.close();
 }

@@ -130,8 +130,14 @@ namespace CalcFnc {
 namespace Output {
     void printInputDataInfo(int dataColTotal, Delimitation dataDlmType);
     void output(CmdArgs::Args* argsP);
-    void printer(CmdArgs::Args* argsP);
-    void filer(CmdArgs::Args* argsP);
+    void printer(
+        const tuple<size_t, size_t> rowRange,
+        const vector<int>& doubleColSet,
+        const vector<CmdArgs::CalcId>& calcIdSet);
+    void filer(const string& fileOutStr,
+        const tuple<size_t, size_t> rowRange,
+        const vector<int>& doubleColSet,
+        const vector<CmdArgs::CalcId>& calcIdSet);
     template<typename T> const unordered_map<CmdArgs::CalcId, calcType>
         mapCalcIdToCalc;
 }
