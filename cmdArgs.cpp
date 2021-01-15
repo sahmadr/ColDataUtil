@@ -339,8 +339,6 @@ void Row::process() {
             || (m_rowEnd <= m_rowBgn)) {
         throw invalid_argument(errorRowRangeInvalid);
     }
-    cout << "rowBgn = " << m_rowBgn << endl;
-    cout << "rowEnd = " << m_rowEnd << endl;
 }
 const tuple<size_t, size_t> Row::getRowRange() const {
     return {m_rowBgn, m_rowEnd};

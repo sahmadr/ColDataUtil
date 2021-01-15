@@ -66,16 +66,12 @@ namespace ColData {
     tuple<int, Delimitation> loadData(const string& fileName,
         const string& dlm);
     void printAvailableTimestepRange();
-    void printColNames(int dataColtTotal, Delimitation dataDlmType);
     void printData(string dlm=",");
     void fileData(string fileName, string dlm);
     const tuple<size_t, size_t> returnRows(const int column,
         const size_t timestepBgn, const size_t timestepEnd);
-    void printer(const string& fncName, double value);
     void filer(const string& fileName, const string& colName,
         const string& outputStr, const string& fncName, double value);
-    void outputValue(calcType calc, const int column,
-        const tuple<size_t, size_t> rowRange);
     void outputValue(const string& fileName, calcType calc, const int column,
         const tuple<size_t, size_t> rowRange);
     // const string& rowTimestepsStrMaker
@@ -132,6 +128,7 @@ namespace CalcFnc {
 //----------------------------------------------------------------------------//
 
 namespace Output {
+    void printInputDataInfo(int dataColTotal, Delimitation dataDlmType);
     void output(CmdArgs::Args* argsP);
     void printer(CmdArgs::Args* argsP);
     void filer(CmdArgs::Args* argsP);

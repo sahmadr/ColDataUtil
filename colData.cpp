@@ -440,36 +440,6 @@ void ColData::printAvailableTimestepRange() {
             // << timesteps.at(timesteps.size()-1) << " timesteps." << endl;
 }
 
-/*
- * Print the names of all the vector columns; first integers and then doubles.
- */
-void ColData::printColNames(int dataColTotal, Delimitation dataDlmType) {
-    cout<<'\n'<< string(30, '=')
-        << "\n " << "Input data information\n"
-        << string(30, '=') << "\n\n"
-        << setw(20) << left << " Total columns:" << dataColTotal << '\n'
-        << setw(20) << left << " Total rows:"
-            << DoubleV::getOneP(0)->getData().size() << '\n'
-        << setw(20) << left << " Data delimitation:"
-        << ((dataDlmType == Delimitation::delimited) ? "delimiter" :
-            ((dataDlmType == Delimitation::spacedAndDelimited) ?
-                "whitespace and delimiter" : "whitespace")) << endl
-        << "\n Integer columns:\n"
-        << string(30, '-') << "\n";
-    for (IntV* iVP : IntV::getSetP()) {
-        cout<< setw(3) << right << iVP->getColNo() << ". "
-            << left << iVP->getColName() << '\n';
-    }
-    cout<< "\n Double columns:\n"
-        << string(30, '-') << "\n";
-    for (DoubleV* dVP : DoubleV::getSetP()) {
-        cout<< setw(3) << right << dVP->getColNo() << ". "
-            << left << dVP->getColName() << '\n';
-    }
-    cout<< '\n' << string(60, '=') << '\n';
-    // printAvailableTimestepRange();
-}
-
 //----------------------------------------------------------------------------//
 //***************** Printing and filing calculation results ******************//
 //----------------------------------------------------------------------------//
@@ -487,40 +457,6 @@ const tuple<size_t, size_t> ColData::returnRows(const int column,
 }
 
 /*
- * Perform the selected operation on the selected column and print the result
- * to the terminal.
- */
-void ColData::outputValue(calcType calc, const int column,
-        const tuple<size_t, size_t> rowRange) {
-    vector<int> timesteps{IntV::getOneP(0)->getData()};
-    DoubleV* dVP{DoubleV::getOnePFromCol(column)};
-
-    size_t rowBgn, rowEnd;
-    tie(rowBgn, rowEnd) = rowRange;
-
-    string outputStr = "rows " + to_string(rowBgn) + " to " + to_string(rowEnd);
-
-    // << std::setw(25) << colName
-    // << std::setw(25) << outputStr
-
-    // Print heading
-    cout<< " Calculation results for rows "
-            << to_string(rowBgn) << " to " << to_string(rowEnd) << '\n'
-            << string(60, '=') << '\n';
-
-    // Print subheading
-    cout<< "\n " << dVP->getColName() << ":\n" << string(30, '-') << '\n';
-
-    // Print calculations
-    cout.setf(ios_base::scientific);
-    cout.precision(numeric_limits<double>::max_digits10);
-    cout<< ' ' << left << setw(22) << CalcFnc::mapCalcToStr<int>.at(calc)
-        << " = " << calc(column, rowBgn, rowEnd) << endl;
-    // printer(dVP->getColName(), outputStr, CalcFnc::mapCalcToStr<int>.at(calc),
-    //         calc(column, rowBgn, rowEnd));
-}
-
-/*
  * Perform the selected operation on the selected column and file the result.
  */
 void ColData::outputValue(const string& fileName, calcType calc,
@@ -535,15 +471,6 @@ void ColData::outputValue(const string& fileName, calcType calc,
 
     filer(fileName, dVP->getColName(), outputStr,
             CalcFnc::mapCalcToStr<int>.at(calc), calc(column, rowBgn, rowEnd));
-}
-
-/*
- * Printer for ColData::outputValue.
- */
-void ColData::printer(const string& fncName, double value) {
-    cout.setf(ios_base::scientific);
-    cout.precision(numeric_limits<double>::max_digits10);
-    cout<< "\n " << left << setw(22) << fncName << " = " << value << endl;
 }
 
 /*
