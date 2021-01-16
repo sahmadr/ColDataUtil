@@ -13,16 +13,58 @@
 #include "output.h"
 
 //----------------------------------------------------------------------------//
+//*************************** Main output function ***************************//
+//----------------------------------------------------------------------------//
+/*
+ * Perform the output operations based on user input.
+ */
+void Output::output(CmdArgs::Args* argsP) {
+    printInputDataInfo(argsP->getFileInP()->getDataColTotal(),
+                       argsP->getFileInP()->getDataRowTotal(),
+                       argsP->getFileInP()->getDataDlmType());
+
+    if (argsP->getCalcP()) {
+        if (!argsP->getFileOutP()) {
+            printer(argsP->getRowP()->getRowRange(),
+                    argsP->getColumnP()->getDoubleColSet(),
+                    argsP->getCalcP()->getCalcIdSet());
+        }
+        else {
+            for (const string& fileOut : argsP->getFileOutP()->getFileLocSet()){
+                filer(fileOut,
+                      argsP->getRowP()->getRowRange(),
+                      argsP->getColumnP()->getDoubleColSet(),
+                      argsP->getCalcP()->getCalcIdSet());
+                cout<< "\nThe output has been written to \"" << fileOut << "\""
+                    << endl;
+            }
+        }
+    }
+    if (argsP->getPrintDataP()) {
+        dataPrinter(argsP->getPrintDataP()->getDelimiter(),
+                    argsP->getFileInP()->getDataRowTotal());
+    }
+    if (argsP->getFileDataP()) {
+        dataFiler(argsP->getFileDataP()->getFileDataName(),
+                  argsP->getFileDataP()->getDelimiter(),
+                  argsP->getFileInP()->getDataRowTotal());
+        cout<< "\nThe output has been written to \""
+            << argsP->getFileDataP()->getFileDataName() << "\"" << endl;
+    }
+}
+
+//----------------------------------------------------------------------------//
 //******************** Printing information on loaded data *******************//
 //----------------------------------------------------------------------------//
 /*
  * Print the names of all the vector columns; first integers and then doubles.
  */
-void Output::printInputDataInfo(int dataColTotal, Delimitation dataDlmType) {
+void Output::printInputDataInfo(const int dataColTotal,
+        const size_t dataRowTotal, const Delimitation dataDlmType) {
     cout<< left << '\n' << string(30, '=') << "\n "
         << "Input data information\n" << string(30, '=') << "\n\n"
         << setw(20) << " Total columns:" << dataColTotal << '\n'
-        << setw(20) << " Total rows:" << DoubleV::getOneP(0)->getData().size()
+        << setw(20) << " Total rows:" << dataRowTotal
         << '\n' << setw(20) << " Data delimitation:"
         << ((dataDlmType == Delimitation::delimited) ? "delimiter" :
             ((dataDlmType == Delimitation::spacedAndDelimited) ?
@@ -44,40 +86,6 @@ void Output::printInputDataInfo(int dataColTotal, Delimitation dataDlmType) {
 //----------------------------------------------------------------------------//
 //***************** Printing and filing calculation results ******************//
 //----------------------------------------------------------------------------//
-/*
- * Perform the output operations based on user input.
- */
-void Output::output(CmdArgs::Args* argsP) {
-    printInputDataInfo(argsP->getDataColTotal(), argsP->getDataDlmType());
-
-    if (argsP->getCalcP()) {
-        if (!argsP->getFileOutP()) {
-            printer(argsP->getRowP()->getRowRange(),
-                    argsP->getColumnP()->getDoubleColSet(),
-                    argsP->getCalcP()->getCalcIdSet());
-        }
-        else {
-            for (const string& fileOut : argsP->getFileOutP()->getFileLocSet()){
-                filer(fileOut,
-                      argsP->getRowP()->getRowRange(),
-                      argsP->getColumnP()->getDoubleColSet(),
-                      argsP->getCalcP()->getCalcIdSet());
-                cout<< "\nThe output has been written to \"" << fileOut << "\""
-                    << endl;
-            }
-        }
-    }
-    if (argsP->getPrintDataP()) {
-        printData(argsP->getPrintDataP()->getDelimiter());
-    }
-    if (argsP->getFileDataP()) {
-        fileData(argsP->getFileDataP()->getFileDataName(),
-                 argsP->getFileDataP()->getDelimiter());
-        cout<< "\nThe output has been written to \""
-            << argsP->getFileDataP()->getFileDataName() << "\"" << endl;
-    }
-}
-
 /*
  * Perform all the selected operations on all the selected columns and print the
  * results to the terminal.
@@ -165,10 +173,9 @@ void Output::filer(const string& fileOutStr,
 /*
  * Print the data of all the vector columns; first integers and then doubles.
  */
-void Output::printData(const string dlm) {
+void Output::dataPrinter(const string& dlm, const size_t dataRowTotal) {
     vector<IntV*>    iVSetP{IntV::getSetP()};
     vector<DoubleV*> dVSetP{DoubleV::getSetP()};
-    size_t totalRows{dVSetP.at(0)->getData().size()};
 
     cout.setf(ios_base::scientific);
     cout.precision(numeric_limits<double>::max_digits10);
@@ -180,7 +187,7 @@ void Output::printData(const string dlm) {
     cout << "\n\n";
 
     // Print the data
-    for (size_t row=0; row<totalRows; ++row) {
+    for (size_t row=0; row<dataRowTotal; ++row) {
         for (IntV* iVP : iVSetP)    { cout << iVP->getData()[row] << dlm;}
         for (DoubleV* dVP : dVSetP) { cout << dVP->getData()[row] << dlm;}
         cout << '\n';
@@ -191,14 +198,14 @@ void Output::printData(const string dlm) {
 /*
  * File the data of all the vector columns; first integers and then doubles.
  */
-void Output::fileData(const string& fileName, const string& dlm) {
+void Output::dataFiler(const string& fileName, const string& dlm,
+        const size_t dataRowTotal) {
     ofstream fOut{fileName};
     fOut.setf(ios_base::scientific);
     fOut.precision(numeric_limits<double>::max_digits10);
 
     vector<IntV*>    iVSetP{IntV::getSetP()};
     vector<DoubleV*> dVSetP{DoubleV::getSetP()};
-    size_t totalRows {dVSetP.at(0)->getData().size()};
 
     // File the header line
     for (IntV* iVP : iVSetP)    { fOut << iVP->getColName() << dlm; }
@@ -206,7 +213,7 @@ void Output::fileData(const string& fileName, const string& dlm) {
     fOut << '\n';
 
     // File the data
-    for (size_t row=0; row<totalRows; ++row) {
+    for (size_t row=0; row<dataRowTotal; ++row) {
         for (IntV* iVP : iVSetP) {
             fOut << iVP->getData()[row] << dlm;
         }

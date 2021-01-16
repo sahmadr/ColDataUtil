@@ -30,6 +30,7 @@ class CmdArgs::Args {
     const string            m_programName;  // program name
     Delimitation            m_dataDlmType;  // data delimitation type
     int                     m_dataColTotal; // total number of columns
+    size_t                  m_dataRowTotal; // total number of rows
     Delimiter*              m_delimiterP;   // delimiter
     FileIn*                 m_fileInP;      // file with data to be processed
     Calc*                   m_calcP;        // value functions to be calculated
@@ -57,8 +58,6 @@ class CmdArgs::Args {
     int getArgC() const;
     const vector<string>& getArgV() const;
     const string getProgramName() const;
-    Delimitation getDataDlmType() const;
-    int getDataColTotal() const;
 
     const Delimiter* getDelimiterP() const;
     const FileIn* getFileInP() const;
@@ -94,7 +93,11 @@ class CmdArgs::Delimiter {
 
 class CmdArgs::FileIn {
   private:
-    string m_fileLocation{""};
+    string          m_fileLocation{""};
+    int             m_dataColTotal{0};
+    size_t          m_dataRowTotal{0};
+    Delimitation    m_dataDlmType{Delimitation::undefined};
+
 
     FileIn() = delete;
     FileIn(const FileIn&) = delete;
@@ -103,8 +106,11 @@ class CmdArgs::FileIn {
   public:
     explicit FileIn(int c, int argC, const vector<string>& argV);
     explicit FileIn(const vector<string>& argV);
-    tuple<int, Delimitation> process(const string& delimiter);
+    void process(const string& delimiter);
     const string& getFileLocation() const;
+    int getDataColTotal() const;
+    size_t getDataRowTotal() const;
+    Delimitation getDataDlmType() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -164,7 +170,7 @@ class CmdArgs::Row {
   public:
     explicit Row() = default;
     explicit Row(int c, int argC, const vector<string>& argV);
-    void process();
+    void process(const FileIn* fileIn);
     void setRowEnd(int c, int argC, const vector<string>& argV);
     const tuple<size_t, size_t> getRowRange() const;
 };
@@ -184,7 +190,7 @@ class CmdArgs::Timestep {
 
   public:
     explicit Timestep(int c, int argC, const vector<string>& argV);
-    void process();
+    void process(const FileIn* fileIn);
     const tuple<size_t, size_t> getTimestepRange() const;
 };
 

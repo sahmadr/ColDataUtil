@@ -48,8 +48,10 @@ namespace ColData {
     // inline constexpr int delimiterLenLimit = 3;
     class DoubleV;
     class IntV;
+    tuple<int, size_t, Delimitation> loadData(const string& fileName,
+        const string& dlm);
     bool isNumberLine(stringV lineStr, string dlm);
-    tuple<streampos, streampos> findLinePositions(ifstream& iFile,
+    tuple<streampos, streampos> findHeaderLinePositions(ifstream& iFile,
         const string& dlm);
     tuple<string, Delimitation> parseHeaderLine(ifstream& iFile,
         const string& dlm, const streampos headerLinePos);
@@ -61,10 +63,9 @@ namespace ColData {
         const Delimitation dataDlmType, const streampos dataLinePos,
         const int colTotal);
     void createVectors(const vector<string>& colNames);
-    void populateVectors(ifstream& iFile, const string& dlm,
-        const Delimitation dataDlmType, const streampos dataLinePos);
-    tuple<int, Delimitation> loadData(const string& fileName,
-        const string& dlm);
+    int populateVectors(ifstream& iFile, const string& dlm,
+        const int dataColTotal, const Delimitation dataDlmType,
+        const streampos dataLinePos);
     void printAvailableTimestepRange();
     const tuple<size_t, size_t> returnRows(const int column,
         const size_t timestepBgn, const size_t timestepEnd);
@@ -123,8 +124,9 @@ namespace CalcFnc {
 //----------------------------------------------------------------------------//
 
 namespace Output {
-    void printInputDataInfo(int dataColTotal, Delimitation dataDlmType);
     void output(CmdArgs::Args* argsP);
+    void printInputDataInfo(const int dataColTotal, const size_t dataRowTotal,
+        const Delimitation dataDlmType);
     void printer(
         const tuple<size_t, size_t> rowRange,
         const vector<int>& doubleColSet,
@@ -133,8 +135,9 @@ namespace Output {
         const tuple<size_t, size_t> rowRange,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet);
-    void printData(const string dlm);
-    void fileData(const string& fileName, const string& dlm);
+    void dataPrinter(const string& dlm, const size_t dataRowTotal);
+    void dataFiler(const string& fileName, const string& dlm,
+        const size_t dataRowTotal);
     template<typename T> const unordered_map<CmdArgs::CalcId, calcType>
         mapCalcIdToCalc;
 }

@@ -127,6 +127,41 @@ double DoubleV::getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const {
 //************************* Data loading and storage *************************//
 //----------------------------------------------------------------------------//
 /*
+ * Load file and call createVectors and populateVectors functions.
+ */
+tuple<int, size_t, Delimitation> ColData::loadData(const string& fileName,
+        const string& dlm) {
+    streampos headerLinePos, dataLinePos;
+    string headerLine;
+    Delimitation headerDlmType, dataDlmType;
+    int dataColTotal;
+    size_t dataRowTotal;
+    vector<string> colNames;
+    ifstream iFile{fileName};
+
+    if (!iFile) { throw runtime_error(errorInputFile); }
+    else { cout << "File found. Program initiated." << flush; }
+    iFile.setf(ios_base::scientific);
+    iFile.precision(numeric_limits<double>::max_digits10);
+
+    tie(headerLinePos, dataLinePos) = findHeaderLinePositions(iFile, dlm);
+    tie(headerLine, headerDlmType) = parseHeaderLine(iFile, dlm, headerLinePos);
+    tie(dataColTotal, colNames) = identifyColumnHeaders(headerLine, dlm,
+                                                        headerDlmType);
+    dataDlmType = parseColumnData(iFile, dlm, dataLinePos);
+    cout << "\rParsing column data in progress..." << flush;
+    classifyColumns(iFile, dlm, dataDlmType, dataLinePos, dataColTotal);
+    createVectors(colNames);
+    cout << "\rStoring column data in progress..." << flush;
+    dataRowTotal = populateVectors(iFile, dlm, dataColTotal, dataDlmType,
+                                   dataLinePos);
+    cout << '\r' << string(34, ' ') << "\n" << flush;
+    iFile.close();
+
+    return {dataColTotal, dataRowTotal, dataDlmType};
+}
+
+/*
  * Check if the line is a number line, i.e. it has numerical data.
  */
 bool ColData::isNumberLine(stringV lineStr, string dlm) {
@@ -142,7 +177,7 @@ bool ColData::isNumberLine(stringV lineStr, string dlm) {
 /*
  * Return the header line position
  */
-tuple<streampos, streampos> ColData::findLinePositions(ifstream& iFile,
+tuple<streampos, streampos> ColData::findHeaderLinePositions(ifstream& iFile,
         const string& dlm) {
     string line;
     iFile.clear(), iFile.seekg(0);
@@ -207,7 +242,7 @@ tuple<string, Delimitation> ColData::parseHeaderLine(
 tuple<int, vector<string>> ColData::identifyColumnHeaders(string headerLine,
         const string& dlm, const Delimitation headerDlmType) {
     size_t pos{0}, dlmLen{dlm.length()};
-    int colTotal{0};
+    int dataColTotal{0};
     vector<string> colNames{};
 
     if (headerDlmType == Delimitation::delimited) {
@@ -215,7 +250,7 @@ tuple<int, vector<string>> ColData::identifyColumnHeaders(string headerLine,
             string header{headerLine.substr(0, pos=headerLine.find(dlm))};
             if (!std::all_of(header.cbegin(), header.cend(), isspace)) {
                 colNames.push_back(header);
-                ++colTotal;
+                ++dataColTotal;
             }
             headerLine.erase(0, pos+dlmLen);
         }
@@ -225,13 +260,13 @@ tuple<int, vector<string>> ColData::identifyColumnHeaders(string headerLine,
         string header;
         while (headerLineStream >> header) {
             colNames.push_back(header);
-            ++colTotal;
+            ++dataColTotal;
         }
     }
     else {
         throw runtime_error(errorHeaderDlmTypeUndefined);
     }
-    return {colTotal, colNames};
+    return {dataColTotal, colNames};
 }
 
 /*
@@ -268,7 +303,7 @@ Delimitation ColData::parseColumnData(ifstream& iFile,
  */
 void ColData::classifyColumns(ifstream& iFile, const string& dlm,
         const Delimitation dataDlmType, const streampos dataLinePos,
-        const int colTotal) {
+        const int dataColTotal) {
     size_t pos{0}, dlmLen{dlm.length()};
     string line;
     set<int> intColNos{}, doubleColNos{};
@@ -278,7 +313,7 @@ void ColData::classifyColumns(ifstream& iFile, const string& dlm,
     if (dataDlmType == Delimitation::spaced) {
         while(getline(iFile, line)) {
             std::istringstream lineStream{line};
-            for (int c=0; c<colTotal; ++c) {
+            for (int c=0; c<dataColTotal; ++c) {
                 string numStr;
                 lineStream >> numStr;
                 if (!DoubleV::getColNoSet().count(c)) {
@@ -295,7 +330,7 @@ void ColData::classifyColumns(ifstream& iFile, const string& dlm,
                 line.erase(std::remove_if(line.begin(), line.end(), isspace),
                     line.end());        // Remove spaces from the string
             }
-            for (int c=0; c<colTotal; ++c) {
+            for (int c=0; c<dataColTotal; ++c) {
                 pos = line.find(dlm);
                 if (!DoubleV::getColNoSet().count(c)) {
                     string numStr{line.substr(0, pos)};
@@ -307,7 +342,7 @@ void ColData::classifyColumns(ifstream& iFile, const string& dlm,
             }
         }
     }
-    for (int c=0; c<colTotal; ++c) {
+    for (int c=0; c<dataColTotal; ++c) {
         if (!DoubleV::getColNoSet().count(c)) {
             IntV::insertColNoSet(c);
         }
@@ -329,10 +364,10 @@ void ColData::createVectors(const vector<string>& colNames) {
 /*
  * Populate the column vectors by reading the respective column data from file.
  */
-void ColData::populateVectors(ifstream& iFile, const string& dlm,
-        const Delimitation dataDlmType, const streampos dataLinePos) {
-    size_t pos{0}, lineNo{0}, dlmLen{dlm.length()};
-    int colTotal{IntV::getTotal() + DoubleV::getTotal()};
+int ColData::populateVectors(ifstream& iFile, const string& dlm,
+        const int dataColTotal, const Delimitation dataDlmType,
+        const streampos dataLinePos) {
+    size_t pos{0}, dataRowTotal{0}, dlmLen{dlm.length()};
     string line;
     vector<IntV*> iVSetP{IntV::getSetP()};
     vector<DoubleV*> dVSetP{DoubleV::getSetP()};
@@ -344,7 +379,7 @@ void ColData::populateVectors(ifstream& iFile, const string& dlm,
             if (std::all_of(line.cbegin(), line.cend(), isspace)) { continue; }
             std::istringstream lineStream{line};
             int iIndex{0}, dIndex{0};
-            for (int c=0; c<colTotal; ++c) {
+            for (int c=0; c<dataColTotal; ++c) {
                 string numStr;
                 lineStream >> numStr;
                 if (DoubleV::getColNoSet().count(c)) {     // if double column
@@ -354,7 +389,7 @@ void ColData::populateVectors(ifstream& iFile, const string& dlm,
                     iVSetP.at(iIndex++)->addValue(stoi(numStr));
                 }
             }
-            ++lineNo;
+            ++dataRowTotal;
         }
     }
     else {
@@ -365,7 +400,7 @@ void ColData::populateVectors(ifstream& iFile, const string& dlm,
                     line.end());        // Remove spaces from the string
             }
             int iIndex{0}, dIndex{0};
-            for (int c=0; c<colTotal; ++c) {
+            for (int c=0; c<dataColTotal; ++c) {
                 string numStr{line.substr(0, pos=line.find(dlm))};
                 if (DoubleV::getColNoSet().count(c)) {     // if double column
                     dVSetP.at(dIndex++)->addValue(stod(numStr));
@@ -375,53 +410,21 @@ void ColData::populateVectors(ifstream& iFile, const string& dlm,
                 }
                 line.erase(0, pos+dlmLen);
             }
-        ++lineNo;
+        ++dataRowTotal;
         }
     }
     // Match the number of lines of data:
     bool matchLineCount{true};
     for (IntV* iVP : IntV::getSetP()) {
-        if (lineNo != iVP->getData().size()) { matchLineCount = false; }
+        if (dataRowTotal != iVP->getData().size()) { matchLineCount = false; }
     }
     for (DoubleV* dVP : DoubleV::getSetP()) {
-        if (lineNo != dVP->getData().size()) { matchLineCount = false; }
+        if (dataRowTotal != dVP->getData().size()) { matchLineCount = false; }
     }
-    if (lineNo == 0 || !matchLineCount) {
+    if (dataRowTotal == 0 || !matchLineCount) {
         throw runtime_error(errorDlmFormatIncorrect);
     }
-}
-
-/*
- * Load file and call createVectors and populateVectors functions.
- */
-tuple<int, Delimitation> ColData::loadData(const string& fileName,
-        const string& dlm) {
-    streampos headerLinePos, dataLinePos;
-    string headerLine;
-    Delimitation headerDlmType, dataDlmType;
-    int colTotal;
-    vector<string> colNames;
-    ifstream iFile{fileName};
-
-    if (!iFile) { throw runtime_error(errorInputFile); }
-    else { cout << "File found. Program initiated." << flush; }
-    iFile.setf(ios_base::scientific);
-    iFile.precision(numeric_limits<double>::max_digits10);
-
-    tie(headerLinePos, dataLinePos) = findLinePositions(iFile, dlm);
-    tie(headerLine, headerDlmType) = parseHeaderLine(iFile, dlm, headerLinePos);
-    tie(colTotal, colNames) = identifyColumnHeaders(headerLine, dlm,
-                                                    headerDlmType);
-    dataDlmType = parseColumnData(iFile, dlm, dataLinePos);
-    cout << "\rParsing column data in progress..." << flush;
-    classifyColumns(iFile, dlm, dataDlmType, dataLinePos, colTotal);
-    createVectors(colNames);
-    cout << "\rStoring column data in progress..." << flush;
-    populateVectors(iFile, dlm, dataDlmType, dataLinePos);
-    cout << '\r' << string(34, ' ') << "\n" << flush;
-    iFile.close();
-
-    return {colTotal, dataDlmType};
+    return dataRowTotal;
 }
 
 //----------------------------------------------------------------------------//

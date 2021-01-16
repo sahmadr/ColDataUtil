@@ -23,7 +23,6 @@ using namespace CmdArgs;
 
 Args::Args(int argc, char* argv[]) :
   m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
-  m_dataDlmType{Delimitation::undefined}, m_dataColTotal{0},
   m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr},
   m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr},
   m_fileOutP{nullptr}, m_printDataP{nullptr}, m_fileDataP{nullptr} {
@@ -131,8 +130,7 @@ void Args::process() {
     if (!m_delimiterP) { m_delimiterP = new Delimiter(); }
 
     if (!m_fileInP) { throw invalid_argument(errorFileInMissing); }
-    tie(m_dataColTotal, m_dataDlmType) =
-        m_fileInP->process(m_delimiterP->getDelimiter());
+    m_fileInP->process(m_delimiterP->getDelimiter());
 
     if (!m_calcP && (m_columnP || m_timestepP || m_rowP || m_fileOutP)) {
         m_calcP = new Calc();
@@ -152,7 +150,7 @@ void Args::process() {
         if (!m_rowP) {
             m_rowP = new Row();
         }
-        m_rowP->process();
+        m_rowP->process(m_fileInP);
     }
 
     // Optional argument members
@@ -166,8 +164,6 @@ int Args::getCount()                            { return s_c; }
 int Args::getArgC() const                       { return m_argc; }
 const vector<string>& Args::getArgV() const     { return m_argv; }
 const string Args::getProgramName() const       { return m_programName; }
-Delimitation Args::getDataDlmType() const       { return m_dataDlmType; }
-int Args::getDataColTotal() const               { return m_dataColTotal; }
 
 const Delimiter* Args::getDelimiterP() const    { return m_delimiterP; }
 const FileIn* Args::getFileInP() const          { return m_fileInP; }
@@ -202,10 +198,14 @@ FileIn::FileIn(int c, int argC, const vector<string>& argV) {
 FileIn::FileIn(const vector<string>& argV) {
     m_fileLocation = argV[Args::setCount(1)];
 }
-tuple<int, Delimitation> FileIn::process(const string& dlm) {
-    return ColData::loadData(m_fileLocation, dlm);
+void FileIn::process(const string& dlm) {
+    tie(m_dataColTotal, m_dataRowTotal, m_dataDlmType)
+        = ColData::loadData(m_fileLocation, dlm);
 }
-const string& FileIn::getFileLocation() const { return m_fileLocation; }
+const string& FileIn::getFileLocation() const   { return m_fileLocation; }
+int FileIn::getDataColTotal() const             { return m_dataColTotal; }
+size_t FileIn::getDataRowTotal() const          { return m_dataRowTotal; }
+Delimitation FileIn::getDataDlmType() const     { return m_dataDlmType; }
 
 //----------------------------------------------------------------------------//
 //****************************** CmdArgs::Calc *******************************//
@@ -339,11 +339,11 @@ void Row::setRowEnd(int c, int argC, const vector<string>& argV) {
         m_rowEnd = stoi(argV[Args::setCount(++c)]);
     }
 }
-void Row::process() {
+void Row::process(const FileIn* fileIn) {
     if (m_rowEnd == 0) {
-        m_rowEnd = ColData::DoubleV::getOneP(0)->getData().size() - 1;
+        m_rowEnd = fileIn->getDataRowTotal() - 1;
     }
-    else if (m_rowEnd > (ColData::DoubleV::getOneP(0)->getData().size() - 1)
+    else if (m_rowEnd > (fileIn->getDataRowTotal() - 1)
             || (m_rowEnd <= m_rowBgn)) {
         throw invalid_argument(errorRowRangeInvalid);
     }
@@ -369,11 +369,11 @@ Timestep::Timestep(int c, int argC, const vector<string>& argV) {
         else { m_timestepBgn = stoi(argV[Args::setCount(++c)]); }
     }
 }
-void Timestep::process() {
+void Timestep::process(const FileIn* fileIn) {
     if (m_timestepEnd == 0) {
-        // m_timestepEnd = ColData::DoubleV::getOneP(0)->getData().size();
+        // m_timestepEnd = fileIn->getDataRowTotal();
     }
-    else if (m_timestepEnd > ColData::DoubleV::getOneP(0)->getData().size()
+    else if (m_timestepEnd > fileIn->getDataRowTotal()
             || (m_timestepEnd <= m_timestepBgn)) {
         throw invalid_argument(errorRowRangeInvalid);
     }
