@@ -24,9 +24,9 @@ using namespace CmdArgs;
 Args::Args(int argc, char* argv[]) :
   m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
   m_dataDlmType{Delimitation::undefined}, m_dataColTotal{0},
-  m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr}, m_columnP{nullptr},
-  m_rowP{nullptr}, m_timestepP{nullptr}, m_fileOutP{nullptr},
-  m_printDataP{nullptr} {
+  m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr},
+  m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr},
+  m_fileOutP{nullptr}, m_printDataP{nullptr}, m_fileDataP{nullptr} {
     if (argc<=1) { throw logic_error(errorNoArguments); }
     for (s_c=1; s_c<m_argc; ++s_c) {
         if (m_argv[s_c][0] == '-') {
@@ -95,6 +95,12 @@ Args::Args(int argc, char* argv[]) :
                             m_printDataP = new PrintData(s_c, m_argc, m_argv);
                         }
                         break;
+                    case Option::fileData:
+                        cout << "Found key = fileData" << endl;
+                        if (!m_fileDataP) {
+                            m_fileDataP = new FileData(s_c, m_argc, m_argv);
+                        }
+                        break;
                     case Option::help:
                         cout << "Found key = help" << endl;
                         break;
@@ -121,7 +127,7 @@ Args::Args(int argc, char* argv[]) :
  * turn may or may not call the ColData namespace methods.
  */
 void Args::process() {
-    // Mandatory argument members (types)
+    // Mandatory argument members
     if (!m_delimiterP) { m_delimiterP = new Delimiter(); }
 
     if (!m_fileInP) { throw invalid_argument(errorFileInMissing); }
@@ -149,9 +155,10 @@ void Args::process() {
         m_rowP->process();
     }
 
-    // Optional argument members (types)
+    // Optional argument members
     if (m_fileOutP) { m_fileOutP->process(m_fileInP->getFileLocation()); }
-    // No processing needed for m_printDataP
+    // m_printDataP: No processing needed.
+    if (m_fileDataP) { m_fileDataP->process(m_fileInP->getFileLocation()); }
 }
 
 int Args::setCount(int newCount)                { return(s_c = newCount); }
@@ -170,6 +177,7 @@ const Row* Args::getRowP() const                { return m_rowP; }
 const Timestep* Args::getTimestepP() const      { return m_timestepP; }
 const FileOut* Args::getFileOutP() const        { return m_fileOutP; }
 const PrintData* Args::getPrintDataP() const    { return m_printDataP; }
+const FileData* Args::getFileDataP() const      { return m_fileDataP; }
 
 
 //----------------------------------------------------------------------------//
@@ -413,6 +421,27 @@ PrintData::PrintData(int c, int argC, const vector<string>& argV) {
     }
 }
 const string& PrintData::getDelimiter() const { return m_delimiter; }
+
+//----------------------------------------------------------------------------//
+//**************************** CmdArgs::FileData *****************************//
+//----------------------------------------------------------------------------//
+
+FileData::FileData(int c, int argC, const vector<string>& argV) {
+    if (c+1 < argC && argV[c+1][0] != '-') {
+        m_delimiter = argV[Args::setCount(++c)];
+    }
+}
+void FileData::process(const string& fileInName) {
+    size_t pos;
+    if ((pos = fileInName.find_last_of('.')) != string::npos) {
+        m_fileDataName = fileInName.substr(0, pos) + "_data.dat";
+    }
+    else {
+        m_fileDataName = fileInName + "_data.dat";
+    }
+}
+const string& FileData::getFileDataName() const { return m_fileDataName; }
+const string& FileData::getDelimiter() const    { return m_delimiter; }
 
 //----------------------------------------------------------------------------//
 //**************************** CmdArgs::Timestep *****************************//

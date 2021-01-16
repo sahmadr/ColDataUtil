@@ -12,6 +12,9 @@
 
 #include "output.h"
 
+//----------------------------------------------------------------------------//
+//******************** Printing information on loaded data *******************//
+//----------------------------------------------------------------------------//
 /*
  * Print the names of all the vector columns; first integers and then doubles.
  */
@@ -38,15 +41,14 @@ void Output::printInputDataInfo(int dataColTotal, Delimitation dataDlmType) {
     cout<< '\n' << string(55, '=') << '\n';
 }
 
+//----------------------------------------------------------------------------//
+//***************** Printing and filing calculation results ******************//
+//----------------------------------------------------------------------------//
 /*
  * Perform the output operations based on user input.
  */
 void Output::output(CmdArgs::Args* argsP) {
     printInputDataInfo(argsP->getDataColTotal(), argsP->getDataDlmType());
-
-    if (argsP->getPrintDataP()) {
-        ColData::printData(argsP->getPrintDataP()->getDelimiter());
-    }
 
     if (argsP->getCalcP()) {
         if (!argsP->getFileOutP()) {
@@ -64,6 +66,15 @@ void Output::output(CmdArgs::Args* argsP) {
                     << endl;
             }
         }
+    }
+    if (argsP->getPrintDataP()) {
+        printData(argsP->getPrintDataP()->getDelimiter());
+    }
+    if (argsP->getFileDataP()) {
+        fileData(argsP->getFileDataP()->getFileDataName(),
+                 argsP->getFileDataP()->getDelimiter());
+        cout<< "\nThe output has been written to \""
+            << argsP->getFileDataP()->getFileDataName() << "\"" << endl;
     }
 }
 
@@ -147,3 +158,81 @@ void Output::filer(const string& fileOutStr,
     fOut << '\n';
     fOut.close();
 }
+
+//----------------------------------------------------------------------------//
+//********************* Printing and filing loaded data **********************//
+//----------------------------------------------------------------------------//
+/*
+ * Print the data of all the vector columns; first integers and then doubles.
+ */
+void Output::printData(const string dlm) {
+    vector<IntV*>    iVSetP{IntV::getSetP()};
+    vector<DoubleV*> dVSetP{DoubleV::getSetP()};
+    size_t totalRows{dVSetP.at(0)->getData().size()};
+
+    cout.setf(ios_base::scientific);
+    cout.precision(numeric_limits<double>::max_digits10);
+
+    // Print the header line
+    cout << '\n';
+    for (IntV* iVP : iVSetP)    { cout << iVP->getColName() << dlm;}
+    for (DoubleV* dVP : dVSetP) { cout << dVP->getColName() << dlm;}
+    cout << "\n\n";
+
+    // Print the data
+    for (size_t row=0; row<totalRows; ++row) {
+        for (IntV* iVP : iVSetP)    { cout << iVP->getData()[row] << dlm;}
+        for (DoubleV* dVP : dVSetP) { cout << dVP->getData()[row] << dlm;}
+        cout << '\n';
+    }
+    cout << flush;
+}
+
+/*
+ * File the data of all the vector columns; first integers and then doubles.
+ */
+void Output::fileData(const string& fileName, const string& dlm) {
+    ofstream fOut{fileName};
+    fOut.setf(ios_base::scientific);
+    fOut.precision(numeric_limits<double>::max_digits10);
+
+    vector<IntV*>    iVSetP{IntV::getSetP()};
+    vector<DoubleV*> dVSetP{DoubleV::getSetP()};
+    size_t totalRows {dVSetP.at(0)->getData().size()};
+
+    // File the header line
+    for (IntV* iVP : iVSetP)    { fOut << iVP->getColName() << dlm; }
+    for (DoubleV* dVP : dVSetP) { fOut << dVP->getColName() << dlm; }
+    fOut << '\n';
+
+    // File the data
+    for (size_t row=0; row<totalRows; ++row) {
+        for (IntV* iVP : iVSetP) {
+            fOut << iVP->getData()[row] << dlm;
+        }
+        for (DoubleV* dVP : dVSetP) {
+            fOut << dVP->getData()[row] << dlm;
+        }
+        fOut << '\n';
+    }
+    fOut << flush;
+    fOut.close();
+}
+
+//----------------------------------------------------------------------------//
+//******************** Printing information on loaded data *******************//
+//----------------------------------------------------------------------------//
+/*
+ * Print the total timesteps available in the file, assuming that
+ * the first column of the loaded data is an integer representation of the
+ * number of timesteps.
+ */
+/*
+void ColData::printAvailableTimestepRange() {
+    vector<int> timesteps{IntV::getOneP(0)->getData()};
+    cout << timesteps.size() << '\n';
+    cout    << "\nThe timestep range available in the source file is from "
+            << timesteps.at(0) << " to ";
+            // << timesteps.at(timesteps.size()-1) << " timesteps." << endl;
+}
+*/

@@ -26,7 +26,6 @@ inline const unordered_map<string, Option> CmdArgs::mapStrToOption {
     {"-t",              Option::timestep},
     // {"-d",              Option::fileOut},
     {"-o",              Option::fileOut},
-    {"-p",              Option::printData},
     {"-h",              Option::help},
     {"-v",              Option::version},
     {"--delimiter",     Option::delimiter},
@@ -46,6 +45,7 @@ inline const unordered_map<string, Option> CmdArgs::mapStrToOption {
     // {"--destination",   Option::fileOut},
     {"--output",        Option::fileOut},
     {"--print-data",    Option::printData},
+    {"--file-data",     Option::fileData},
     {"--help",          Option::help},
     {"--version",       Option::version},
 };

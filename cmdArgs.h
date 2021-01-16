@@ -38,6 +38,7 @@ class CmdArgs::Args {
     Timestep*               m_timestepP;    // range of timesteps
     FileOut*                m_fileOutP;     // file where to save calculations
     PrintData*              m_printDataP;   // print data to the screen
+    FileData*               m_fileDataP;    // file data to a file
 
     Args() = delete;
     Args(const Args&) = delete;
@@ -67,6 +68,7 @@ class CmdArgs::Args {
     const Timestep* getTimestepP() const;
     const FileOut* getFileOutP() const;
     const PrintData* getPrintDataP() const;
+    const FileData* getFileDataP() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -211,7 +213,7 @@ class CmdArgs::FileOut {
 
 class CmdArgs::PrintData {
   private:
-    string  m_delimiter{","};   // currently not
+    string m_delimiter{","};
 
     PrintData() = delete;
     PrintData(const PrintData&) = delete;
@@ -219,6 +221,26 @@ class CmdArgs::PrintData {
 
   public:
     explicit PrintData(int c, int argC, const vector<string>& argV);
+    const string& getDelimiter() const;
+};
+
+//----------------------------------------------------------------------------//
+//**************************** CmdArgs::FileData *****************************//
+//----------------------------------------------------------------------------//
+
+class CmdArgs::FileData {
+  private:
+    string m_fileDataName{""};
+    string m_delimiter{","};
+
+    FileData() = delete;
+    FileData(const FileData&) = delete;
+    FileData& operator=(const FileData&) = delete;
+
+  public:
+    explicit FileData(int c, int argC, const vector<string>& argV);
+    void process(const string& fileInName);
+    const string& getFileDataName() const;
     const string& getDelimiter() const;
 };
 

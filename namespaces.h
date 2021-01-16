@@ -66,14 +66,8 @@ namespace ColData {
     tuple<int, Delimitation> loadData(const string& fileName,
         const string& dlm);
     void printAvailableTimestepRange();
-    void printData(string dlm=",");
-    void fileData(string fileName, string dlm);
     const tuple<size_t, size_t> returnRows(const int column,
         const size_t timestepBgn, const size_t timestepEnd);
-    void filer(const string& fileName, const string& colName,
-        const string& outputStr, const string& fncName, double value);
-    void outputValue(const string& fileName, calcType calc, const int column,
-        const tuple<size_t, size_t> rowRange);
     // const string& rowTimestepsStrMaker
 }
 
@@ -83,7 +77,7 @@ namespace ColData {
 
 namespace CmdArgs {
     enum class Option { delimiter, fileIn, function, column, row, timestep,
-        fileOut, printData, help, version };
+        fileOut, printData, fileData, help, version };
     enum class CalcId { findMin, findMax, findAbsMin, findAbsMax, findMean,
         findQuadraticMean, findCubicMean };
     class Args;
@@ -95,6 +89,7 @@ namespace CmdArgs {
     class Timestep;
     class FileOut;
     class PrintData;
+    class FileData;
     class Help;
     class Version;
     extern const unordered_map<string, Option> mapStrToOption;
@@ -138,6 +133,8 @@ namespace Output {
         const tuple<size_t, size_t> rowRange,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet);
+    void printData(const string dlm);
+    void fileData(const string& fileName, const string& dlm);
     template<typename T> const unordered_map<CmdArgs::CalcId, calcType>
         mapCalcIdToCalc;
 }

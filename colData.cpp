@@ -425,22 +425,6 @@ tuple<int, Delimitation> ColData::loadData(const string& fileName,
 }
 
 //----------------------------------------------------------------------------//
-//******************** Printing information on loaded data *******************//
-//----------------------------------------------------------------------------//
-/*
- * Print the total timesteps available in the file, assuming that
- * the first column of the loaded data is an integer representation of the
- * number of timesteps.
- */
-void ColData::printAvailableTimestepRange() {
-    vector<int> timesteps{IntV::getOneP(0)->getData()};
-    cout << timesteps.size() << '\n';
-    cout    << "\nThe timestep range available in the source file is from "
-            << timesteps.at(0) << " to ";
-            // << timesteps.at(timesteps.size()-1) << " timesteps." << endl;
-}
-
-//----------------------------------------------------------------------------//
 //***************** Printing and filing calculation results ******************//
 //----------------------------------------------------------------------------//
 /*
@@ -454,61 +438,6 @@ const tuple<size_t, size_t> ColData::returnRows(const int column,
     }
     else { rowEnd = timestepEnd - 1; }
     return {rowBgn, rowEnd};
-}
-
-//----------------------------------------------------------------------------//
-//********************* Printing and filing loaded data **********************//
-//----------------------------------------------------------------------------//
-/*
- * Print the data of all the vector columns; first integers and then doubles.
- */
-void ColData::printData(string dlm) {
-    vector<IntV*>    iVSetP{IntV::getSetP()};
-    vector<DoubleV*> dVSetP{DoubleV::getSetP()};
-    size_t totalRows{dVSetP.at(DoubleV::getTotal()-1)->getData().size()};
-    // int totalColumns{IntV::getTotal() + DoubleV::getTotal()};
-
-    // cout    << " Total columns\t= "  << totalColumns << '\n'
-    //         << " Total rows\t= "     << totalRows    << "\n\n";
-    cout.setf(ios_base::scientific);
-    cout.precision(numeric_limits<double>::max_digits10);
-
-    for (size_t row=0; row<totalRows; ++row) {
-        for (IntV* iVP : iVSetP)    { cout << iVP->getData()[row] << dlm;}
-        for (DoubleV* dVP : dVSetP) { cout << dVP->getData()[row] << dlm;}
-        cout << endl;
-    }
-}
-
-/*
- * File the data of all the vector columns; first integers and then doubles.
- * Note: Presently it is NOT available through command line arguments (CmdArgs).
- */
-void ColData::fileData(string fileName, string dlm) {
-    ofstream oFile{fileName};
-    oFile.setf(ios_base::scientific);
-    oFile.precision(numeric_limits<double>::max_digits10);
-
-    vector<IntV*>    iVSetP{IntV::getSetP()};
-    vector<DoubleV*> dVSetP{DoubleV::getSetP()};
-    size_t totalRows {dVSetP.at(DoubleV::getTotal()-1)->getData().size()};
-
-    // File the header line
-    for (IntV* iVP : iVSetP)     { oFile << iVP->getColName() << dlm; }
-    for (DoubleV* dVP : dVSetP) { oFile << dVP->getColName() << dlm; }
-    oFile << endl;
-
-    // File the data
-    for (size_t row=0; row<totalRows; ++row) {
-        for (IntV* iVP : iVSetP) {
-            oFile << iVP->getData()[row] << dlm;
-        }
-        for (DoubleV* dVP : dVSetP) {
-            oFile << dVP->getData()[row] << dlm;
-        }
-        oFile << endl;
-    }
-    oFile.close();
 }
 
 /*
