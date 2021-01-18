@@ -17,6 +17,8 @@
 #include "errorMsgs.h"
 
 using namespace ColData;
+using   std::istringstream, std::all_of, std::any_of, std::remove_if
+        ;
 
 //----------------------------------------------------------------------------//
 //*************************** ColData::IntV Class ****************************//
@@ -137,20 +139,32 @@ tuple<int, size_t, Delimitation> ColData::loadData(const string& fileName,
     int dataColTotal;
     size_t dataRowTotal;
     vector<string> colNames;
-    ifstream iFile{fileName};
+    set<int> timeStepColCandidates;
 
+    // Open file
+    ifstream iFile{fileName};
     if (!iFile) { throw runtime_error(errorInputFile); }
     else { cout << "File found. Program initiated." << flush; }
-    iFile.setf(ios_base::scientific);
-    iFile.precision(numeric_limits<double>::max_digits10);
 
+    // Process the header
     tie(headerLinePos, dataLinePos) = findHeaderLinePositions(iFile, dlm);
     tie(headerLine, headerDlmType) = parseHeaderLine(iFile, dlm, headerLinePos);
     tie(dataColTotal, colNames) = identifyColumnHeaders(headerLine, dlm,
                                                         headerDlmType);
+    timeStepColCandidates = findTimestepColCandidates(dataColTotal, colNames);
+    cout << endl;
+    for (int candidate : timeStepColCandidates) {
+        cout << "candidate = " << candidate << '\n';
+    }
+    cout << endl;
+
+    // Process the data
     dataDlmType = parseColumnData(iFile, dlm, dataLinePos);
     cout << "\rParsing column data in progress..." << flush;
-    classifyColumns(iFile, dlm, dataDlmType, dataLinePos, dataColTotal);
+    classifyColumns(iFile, dlm, dataDlmType, dataLinePos, dataColTotal,
+                    timeStepColCandidates);
+
+    // Store the data
     createVectors(colNames);
     cout << "\rStoring column data in progress..." << flush;
     dataRowTotal = populateVectors(iFile, dlm, dataColTotal, dataDlmType,
@@ -167,15 +181,14 @@ tuple<int, size_t, Delimitation> ColData::loadData(const string& fileName,
 bool ColData::isNumberLine(stringV lineStr, string dlm) {
     string comparisonStr{"0123456789Ee-+."};
     comparisonStr.append(dlm);
-    return std::all_of(lineStr.begin(), lineStr.end(), [&](char c) {
-        return (
-            std::isspace(c) || (comparisonStr.find(c) != string::npos)
-        );
-    });
+    return all_of(lineStr.begin(), lineStr.end(), [&](char c) {
+        return (isspace(c) || (comparisonStr.find(c) != string::npos));
+        });
 }
 
 /*
- * Return the header line position
+ * Return the header line position, assumed to be the line before numerical
+ * data.
  */
 tuple<streampos, streampos> ColData::findHeaderLinePositions(ifstream& iFile,
         const string& dlm) {
@@ -194,8 +207,8 @@ tuple<streampos, streampos> ColData::findHeaderLinePositions(ifstream& iFile,
 }
 
 /*
- * Parse header line for a number of alternatives and return the  correctly
- * formatted header line.
+ * Parse header line for a number of alternative formats and return the
+ * correctly formatted header line.
  */
 tuple<string, Delimitation> ColData::parseHeaderLine(
         ifstream& iFile, const string& dlm, const streampos headerLinePos) {
@@ -205,15 +218,15 @@ tuple<string, Delimitation> ColData::parseHeaderLine(
     getline(iFile, iLine);
 
     if (iLine.find('=') != string::npos) {
-        std::istringstream iLineStream{iLine};
+        istringstream iLineStream{iLine};
         getline(iLineStream, oLine, '=');   // Read until the '=' sign
         getline(iLineStream, oLine);        // Read rest of line and overwrite
         if (oLine.find(dlm) != string::npos) {
             headerDlmType = Delimitation::delimited;
-            oLine.erase(std::remove_if(oLine.begin(), oLine.end(), isspace),
+            oLine.erase(remove_if(oLine.begin(), oLine.end(), isspace),
                 oLine.end());               // Remove spaces from the string
         }
-        else if (std::any_of(oLine.begin(), oLine.end(), isspace)) {
+        else if (any_of(oLine.begin(), oLine.end(), isspace)) {
             headerDlmType = Delimitation::spaced;
         }
         else {
@@ -222,11 +235,11 @@ tuple<string, Delimitation> ColData::parseHeaderLine(
     }
     else if (iLine.find(dlm) != string::npos) {
         headerDlmType = Delimitation::delimited;
-        iLine.erase(std::remove_if(iLine.begin(), iLine.end(), isspace),
+        iLine.erase(remove_if(iLine.begin(), iLine.end(), isspace),
             iLine.end());                   // Remove spaces from the string
         oLine = iLine;
     }
-    else if (std::any_of(iLine.begin(), iLine.end(), isspace)) {
+    else if (any_of(iLine.begin(), iLine.end(), isspace)) {
         headerDlmType = Delimitation::spaced;
         oLine = iLine;
     }
@@ -248,7 +261,7 @@ tuple<int, vector<string>> ColData::identifyColumnHeaders(string headerLine,
     if (headerDlmType == Delimitation::delimited) {
         while (pos != string::npos) {
             string header{headerLine.substr(0, pos=headerLine.find(dlm))};
-            if (!std::all_of(header.cbegin(), header.cend(), isspace)) {
+            if (!all_of(header.cbegin(), header.cend(), isspace)) {
                 colNames.push_back(header);
                 ++dataColTotal;
             }
@@ -256,7 +269,7 @@ tuple<int, vector<string>> ColData::identifyColumnHeaders(string headerLine,
         }
     }
     else if (headerDlmType == Delimitation::spaced) {
-        std::istringstream headerLineStream{headerLine};
+        istringstream headerLineStream{headerLine};
         string header;
         while (headerLineStream >> header) {
             colNames.push_back(header);
@@ -270,6 +283,24 @@ tuple<int, vector<string>> ColData::identifyColumnHeaders(string headerLine,
 }
 
 /*
+ * Find the possible timestep columns by searching for "step" in the column
+ * names and return the set of candidates.
+ */
+set<int> ColData::findTimestepColCandidates(int dataColTotal,
+        vector<string> colNames) {
+    set<int> timestepColCandidates{};
+    for (int c=0; c<dataColTotal; ++c) {
+        string& colName{colNames[c]};
+        std::transform(colName.begin(), colName.end(), colName.begin(),
+                       [](unsigned char c){ return std::tolower(c); });
+        if (colName.find("step") != string::npos) {
+            timestepColCandidates.insert(c);
+        }
+    }
+    return timestepColCandidates;
+}
+
+/*
  * Parse column data to find the delimitation type of column data and the
  * starting position of the column data.
  */
@@ -279,17 +310,17 @@ Delimitation ColData::parseColumnData(ifstream& iFile,
             line;
     iFile.clear(), iFile.seekg(dataLinePos);
     getline(iFile, line);
-    if (std::all_of(line.begin(), line.end(), [&](char c) {
-            return (std::isspace(c) || (spacedNumStr.find(c) != string::npos));
+    if (all_of(line.begin(), line.end(), [&](char c) {
+            return (isspace(c) || (spacedNumStr.find(c) != string::npos));
             })) {
         return Delimitation::spaced;
     }
-    else if (std::all_of(line.begin(), line.end(), [&](char c) {
+    else if (all_of(line.begin(), line.end(), [&](char c) {
             return (delimitedNumStr.find(c) != string::npos); })) {
         return Delimitation::delimited;
     }
-    else if (std::all_of(line.begin(), line.end(), [&](char c) {
-            return (std::isspace(c) || (delimitedNumStr.find(c)!=string::npos));
+    else if (all_of(line.begin(), line.end(), [&](char c) {
+            return (isspace(c) || (delimitedNumStr.find(c)!=string::npos));
             })) {
         return Delimitation::spacedAndDelimited;
     }
@@ -299,25 +330,32 @@ Delimitation ColData::parseColumnData(ifstream& iFile,
 }
 
 /*
- * Classify the columns into integers and doubles by checking each row.
+ * Classify the columns into timestep column and data columns. Timestep column
+ * is identified by selecting the leftmost integer column from the candidates.
  */
 void ColData::classifyColumns(ifstream& iFile, const string& dlm,
         const Delimitation dataDlmType, const streampos dataLinePos,
-        const int dataColTotal) {
+        const int dataColTotal, const set<int> timestepColCandidates) {
     size_t pos{0}, dlmLen{dlm.length()};
     string line;
     set<int> intColNos{}, doubleColNos{};
 
     iFile.clear(), iFile.seekg(dataLinePos);
 
+    // if (dataDlmType == Delimitation::spaced) {
+    //     while(getline(iFile, line)) {
+    //     }
+    // }
+
     if (dataDlmType == Delimitation::spaced) {
         while(getline(iFile, line)) {
-            std::istringstream lineStream{line};
+            if (all_of(line.cbegin(), line.cend(), isspace)) { continue; }
+            istringstream lineStream{line};
             for (int c=0; c<dataColTotal; ++c) {
                 string numStr;
                 lineStream >> numStr;
                 if (!DoubleV::getColNoSet().count(c)) {
-                    if (!std::all_of(numStr.begin(), numStr.end(), isdigit)) {
+                    if (!all_of(numStr.begin(), numStr.end(), isdigit)) {
                         DoubleV::insertColNoSet(c);
                     }
                 }
@@ -325,16 +363,17 @@ void ColData::classifyColumns(ifstream& iFile, const string& dlm,
         }
     }
     else {
-        while(getline(iFile, line) && line.find(dlm) != string::npos) {
+        while(getline(iFile, line)) {
+            if (line.find(dlm) == string::npos) { continue; }
             if (dataDlmType == Delimitation::spacedAndDelimited) {
-                line.erase(std::remove_if(line.begin(), line.end(), isspace),
-                    line.end());        // Remove spaces from the string
+                line.erase(remove_if(line.begin(), line.end(), isspace),
+                    line.end());
             }
             for (int c=0; c<dataColTotal; ++c) {
                 pos = line.find(dlm);
                 if (!DoubleV::getColNoSet().count(c)) {
                     string numStr{line.substr(0, pos)};
-                    if (!std::all_of(numStr.begin(), numStr.end(), isdigit)) {
+                    if (!all_of(numStr.begin(), numStr.end(), isdigit)) {
                         DoubleV::insertColNoSet(c);
                     }
                 }
@@ -376,13 +415,13 @@ int ColData::populateVectors(ifstream& iFile, const string& dlm,
 
     if (dataDlmType == Delimitation::spaced) {
         while(getline(iFile, line)) {
-            if (std::all_of(line.cbegin(), line.cend(), isspace)) { continue; }
-            std::istringstream lineStream{line};
+            if (all_of(line.cbegin(), line.cend(), isspace)) { continue; }
+            istringstream lineStream{line};
             int iIndex{0}, dIndex{0};
             for (int c=0; c<dataColTotal; ++c) {
                 string numStr;
                 lineStream >> numStr;
-                if (DoubleV::getColNoSet().count(c)) {     // if double column
+                if (DoubleV::getColNoSet().count(c)) {
                     dVSetP.at(dIndex++)->addValue(stod(numStr));
                 }
                 else {
@@ -396,13 +435,13 @@ int ColData::populateVectors(ifstream& iFile, const string& dlm,
         while(getline(iFile, line)) {
             if (line.find(dlm) == string::npos) { continue; }
             if (dataDlmType == Delimitation::spacedAndDelimited) {
-                line.erase(std::remove_if(line.begin(), line.end(), isspace),
-                    line.end());        // Remove spaces from the string
+                line.erase(remove_if(line.begin(), line.end(), isspace),
+                    line.end());
             }
             int iIndex{0}, dIndex{0};
             for (int c=0; c<dataColTotal; ++c) {
                 string numStr{line.substr(0, pos=line.find(dlm))};
-                if (DoubleV::getColNoSet().count(c)) {     // if double column
+                if (DoubleV::getColNoSet().count(c)) {
                     dVSetP.at(dIndex++)->addValue(stod(numStr));
                 }
                 else {

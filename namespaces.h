@@ -57,11 +57,13 @@ namespace ColData {
         const string& dlm, const streampos headerLinePos);
     tuple<int, vector<string>> identifyColumnHeaders(string headerLine,
         const string& dlm, const Delimitation headerDlmType);
+    set<int> findTimestepColCandidates(int dataColTotal,
+        vector<string> colNames);
     Delimitation parseColumnData(ifstream& iFile, const string& dlm,
         const streampos dataLinePos);
     void classifyColumns(ifstream& iFile, const string& dlm,
         const Delimitation dataDlmType, const streampos dataLinePos,
-        const int colTotal);
+        const int colTotal, const set<int> timestepColCandidates);
     void createVectors(const vector<string>& colNames);
     int populateVectors(ifstream& iFile, const string& dlm,
         const int dataColTotal, const Delimitation dataDlmType,
