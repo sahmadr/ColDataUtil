@@ -51,7 +51,7 @@ namespace ColData {
     tuple<int, size_t, Delimitation> loadData(const string& fileName,
         const string& dlm);
     bool isNumberLine(stringV lineStr, string dlm);
-    tuple<streampos, streampos> findHeaderLinePositions(ifstream& iFile,
+    tuple<streampos, streampos> findLinePositions(ifstream& iFile,
         const string& dlm);
     tuple<string, Delimitation> parseHeaderLine(ifstream& iFile,
         const string& dlm, const streampos headerLinePos);

@@ -147,7 +147,7 @@ tuple<int, size_t, Delimitation> ColData::loadData(const string& fileName,
     else { cout << "File found. Program initiated." << flush; }
 
     // Process the header
-    tie(headerLinePos, dataLinePos) = findHeaderLinePositions(iFile, dlm);
+    tie(headerLinePos, dataLinePos) = findLinePositions(iFile, dlm);
     tie(headerLine, headerDlmType) = parseHeaderLine(iFile, dlm, headerLinePos);
     tie(dataColTotal, colNames) = identifyColumnHeaders(headerLine, dlm,
                                                         headerDlmType);
@@ -160,16 +160,16 @@ tuple<int, size_t, Delimitation> ColData::loadData(const string& fileName,
 
     // Process the data
     dataDlmType = parseColumnData(iFile, dlm, dataLinePos);
-    cout << "\rParsing column data in progress..." << flush;
+    cout << "\rIn progress: Parsing column data..." << flush;
     classifyColumns(iFile, dlm, dataDlmType, dataLinePos, dataColTotal,
                     timeStepColCandidates);
 
     // Store the data
     createVectors(colNames);
-    cout << "\rStoring column data in progress..." << flush;
+    cout << "\rIn progress: Storing column data..." << flush;
     dataRowTotal = populateVectors(iFile, dlm, dataColTotal, dataDlmType,
                                    dataLinePos);
-    cout << '\r' << string(34, ' ') << "\n" << flush;
+    cout << '\r' << string(35, ' ') << "\n" << flush;
     iFile.close();
 
     return {dataColTotal, dataRowTotal, dataDlmType};
@@ -183,27 +183,33 @@ bool ColData::isNumberLine(stringV lineStr, string dlm) {
     comparisonStr.append(dlm);
     return all_of(lineStr.begin(), lineStr.end(), [&](char c) {
         return (isspace(c) || (comparisonStr.find(c) != string::npos));
-        });
+    });
 }
 
 /*
  * Return the header line position, assumed to be the line before numerical
  * data.
  */
-tuple<streampos, streampos> ColData::findHeaderLinePositions(ifstream& iFile,
+tuple<streampos, streampos> ColData::findLinePositions(ifstream& iFile,
         const string& dlm) {
     string line;
     iFile.clear(), iFile.seekg(0);
-    streampos oldLinePos{0}, newLinePos{0};
+    streampos currentPos{0}, lastPos{0}, headerLinePos{0}, dataLinePos{0};
 
-    do {
-        oldLinePos = newLinePos;
-        newLinePos = iFile.tellg();
-        getline(iFile, line);
+    while (getline(iFile, line)) {
+        lastPos = currentPos;
+        currentPos = iFile.tellg();
+        if (!line.empty()) {
+            if (!isNumberLine(line, dlm)) {
+                headerLinePos = lastPos;
+            }
+            else {
+                dataLinePos = lastPos;
+                break;
+            }
+        }
     }
-    while (!isNumberLine(line, dlm));
-
-    return {oldLinePos, newLinePos};
+    return {headerLinePos, dataLinePos};
 }
 
 /*
@@ -311,8 +317,7 @@ Delimitation ColData::parseColumnData(ifstream& iFile,
     iFile.clear(), iFile.seekg(dataLinePos);
     getline(iFile, line);
     if (all_of(line.begin(), line.end(), [&](char c) {
-            return (isspace(c) || (spacedNumStr.find(c) != string::npos));
-            })) {
+            return (isspace(c) || (spacedNumStr.find(c) != string::npos)); })) {
         return Delimitation::spaced;
     }
     else if (all_of(line.begin(), line.end(), [&](char c) {
@@ -320,8 +325,7 @@ Delimitation ColData::parseColumnData(ifstream& iFile,
         return Delimitation::delimited;
     }
     else if (all_of(line.begin(), line.end(), [&](char c) {
-            return (isspace(c) || (delimitedNumStr.find(c)!=string::npos));
-            })) {
+            return (isspace(c) || (delimitedNumStr.find(c)!=string::npos));})) {
         return Delimitation::spacedAndDelimited;
     }
     else {
