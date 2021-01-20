@@ -19,7 +19,8 @@
  * Perform the output operations based on user input.
  */
 void Output::output(CmdArgs::Args* argsP) {
-    printInputDataInfo(argsP->getFileInP()->getDataColTotal(),
+    printInputDataInfo(argsP->getFileInP()->getFileLocation(),
+                       argsP->getFileInP()->getDataColTotal(),
                        argsP->getFileInP()->getDataRowTotal(),
                        argsP->getFileInP()->getDataDlmType());
 
@@ -59,22 +60,30 @@ void Output::output(CmdArgs::Args* argsP) {
 /*
  * Print the names of all the vector columns; first integers and then doubles.
  */
-void Output::printInputDataInfo(const int dataColTotal,
-        const size_t dataRowTotal, const Delimitation dataDlmType) {
-    cout<< left << '\n' << string(30, '=') << "\n "
-        << "Input data information\n" << string(30, '=') << "\n\n"
+void Output::printInputDataInfo(const string& fileInName,
+        const int dataColTotal, const size_t dataRowTotal,
+        const Delimitation dataDlmType) {
+    cout<< left << '\n' << string(55, '=') << "\n "
+        << "Input file: " << fileInName << '\n' << string(55, '=') << "\n\n"
         << setw(20) << " Total columns:" << dataColTotal << '\n'
         << setw(20) << " Total rows:" << dataRowTotal
         << '\n' << setw(20) << " Data delimitation:"
         << ((dataDlmType == Delimitation::delimited) ? "delimiter" :
             ((dataDlmType == Delimitation::spacedAndDelimited) ?
-                "whitespace and delimiter" : "whitespace")) << endl
-        << "\n Integer columns:\n" << string(30, '-') << "\n";
-    for (IntV* iVP : IntV::getSetP()) {
-        cout<< setw(3) << right << iVP->getColNo() << ". "
-            << left << iVP->getColName() << '\n';
+                "whitespace and delimiter" : "whitespace")) << '\n' << endl;
+
+    if (!IntV::getSetP().empty()) {
+        cout<< " Timestep column:\n" << string(30, '-') << '\n';
+        for (IntV* iVP : IntV::getSetP()) {
+            cout<< setw(3) << right << iVP->getColNo() << ". "
+                << left << iVP->getColName() << '\n';
+        }
+        cout << '\n';
     }
-    cout<< "\n Double columns:\n"
+    else {
+        cout<< " No timestep column was found.\n\n";
+    }
+    cout<< " Data columns:\n"
         << string(30, '-') << "\n";
     for (DoubleV* dVP : DoubleV::getSetP()) {
         cout<< setw(3) << right << dVP->getColNo() << ". "

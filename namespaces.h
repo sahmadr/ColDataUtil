@@ -63,7 +63,7 @@ namespace ColData {
         const streampos dataLinePos);
     void classifyColumns(ifstream& iFile, const string& dlm,
         const Delimitation dataDlmType, const streampos dataLinePos,
-        const int colTotal, const set<int> timestepColCandidates);
+        const int colTotal, set<int>& timestepColCandidates);
     void createVectors(const vector<string>& colNames);
     int populateVectors(ifstream& iFile, const string& dlm,
         const int dataColTotal, const Delimitation dataDlmType,
@@ -127,8 +127,8 @@ namespace CalcFnc {
 
 namespace Output {
     void output(CmdArgs::Args* argsP);
-    void printInputDataInfo(const int dataColTotal, const size_t dataRowTotal,
-        const Delimitation dataDlmType);
+    void printInputDataInfo(const string& fileInName, const int dataColTotal,
+        const size_t dataRowTotal, const Delimitation dataDlmType);
     void printer(
         const tuple<size_t, size_t> rowRange,
         const vector<int>& doubleColSet,
