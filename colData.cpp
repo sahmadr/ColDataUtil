@@ -2,7 +2,7 @@
  * @file        colData.cpp
  *
  * @project     colDataUtil
- * @version     0.2
+ * @version     0.3
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
@@ -503,44 +503,3 @@ const tuple<size_t, size_t> ColData::returnRows(const int column,
                     [](unsigned char c){ return std::tolower(c); });
     return s;
 } */
-/*
-if (dataDlmType == Delimitation::spaced) {
-        while(getline(iFile, line)) {
-            if (all_of(line.cbegin(), line.cend(), isspace)) { continue; }
-            istringstream lineStream{line};
-            for (int c=0; c<dataColTotal; ++c) {
-                string numStr;
-                lineStream >> numStr;
-                if (!DoubleV::getColNoSet().count(c)) {
-                    if (!all_of(numStr.begin(), numStr.end(), isdigit)) {
-                        DoubleV::insertColNoSet(c);
-                    }
-                }
-            }
-        }
-    }
-    else {
-        while(getline(iFile, line)) {
-            if (line.find(dlm) == string::npos) { continue; }
-            if (dataDlmType == Delimitation::spacedAndDelimited) {
-                line.erase(remove_if(line.begin(), line.end(), isspace),
-                    line.end());
-            }
-            for (int c=0; c<dataColTotal; ++c) {
-                pos = line.find(dlm);
-                if (!DoubleV::getColNoSet().count(c)) {
-                    string numStr{line.substr(0, pos)};
-                    if (!all_of(numStr.begin(), numStr.end(), isdigit)) {
-                        DoubleV::insertColNoSet(c);
-                    }
-                }
-                line.erase(0, pos+dlmLen);
-            }
-        }
-    }
-    for (int c=0; c<dataColTotal; ++c) {
-        if (!DoubleV::getColNoSet().count(c)) {
-            IntV::insertColNoSet(c);
-        }
-    }
- */

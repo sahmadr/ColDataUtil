@@ -2,7 +2,7 @@
  * @file        output.cpp
  *
  * @project     colDataUtil
- * @version     0.2
+ * @version     0.3
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
@@ -103,7 +103,7 @@ void Output::printer(
         const tuple<size_t, size_t> rowRange,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet) {
-    vector<int> timesteps{IntV::getOneP(0)->getData()};
+    // vector<int> timesteps{IntV::getOneP(0)->getData()};
     size_t rowBgn, rowEnd;
     tie(rowBgn, rowEnd) = rowRange;
 
@@ -142,7 +142,7 @@ void Output::filer(const string& fileOutStr,
         const tuple<size_t, size_t> rowRange,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet) {
-    vector<int> timesteps{IntV::getOneP(0)->getData()};
+    // vector<int> timesteps{IntV::getOneP(0)->getData()};
     size_t rowBgn, rowEnd;
     tie(rowBgn, rowEnd) = rowRange;
 
