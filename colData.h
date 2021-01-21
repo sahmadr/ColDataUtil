@@ -2,7 +2,7 @@
  * @file        colData.h
  *
  * @project     colDataUtil
- * @version     0.3
+ * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
@@ -38,20 +38,25 @@ class ColData::IntV {
 
   public:
     explicit IntV(int colNo, string colName);
+
+    void addValue(int value);
+    static void insertColNoSet(int);
+
     int getId() const;
     int getColNo() const;
     const string& getColName() const;
     int getCol(int colNo) const;
     string& getCol(string& colName) const;
     const vector<int>& getData() const;
-    void addValue(int value);
-    static void insertColNoSet(int);
+    tuple<bool, size_t, size_t> getTimestepColRange() const;
+    size_t getRow(int timestepVal) const;
+
     static int getTotal();
     static set<int>& getColNoSet();
     static vector<IntV*>& getSetP();
     static IntV* getOneP(const int id);
-    static IntV* getOnePFromCol(const int inputColNo);
-    static IntV* getOnePFromCol(const string inputColName);
+    // static IntV* getOnePFromCol(const int inputColNo);
+    // static IntV* getOnePFromCol(const string inputColName);
     template<typename T>
     IntV* getOnePFromCol(const T inputCol) {
     int id{-1};
@@ -86,21 +91,25 @@ class ColData::DoubleV {
 
   public:
     explicit DoubleV(int colNo, string colName);
+
+    void addValue(double value);
+    static void insertColNoSet(int colNo);
+
     int getId() const;
     int getColNo() const;
     const string& getColName() const;
     const vector<double>& getData() const;
-    void addValue(double value);
-    static void insertColNoSet(int colNo);
-    double getSum(const size_t rowBgn, const size_t rowEnd) const;
-    double getSumOfSquares(const size_t rowBgn, const size_t rowEnd) const;
-    double getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const;
+
     static int getTotal();
     static set<int>& getColNoSet();
     static vector<DoubleV*>& getSetP();
     static DoubleV* getOneP(const int id);
     static DoubleV* getOnePFromCol(const int inputColNo);
     static DoubleV* getOnePFromCol(const string inputColName);
+
+    double getSum(const size_t rowBgn, const size_t rowEnd) const;
+    double getSumOfSquares(const size_t rowBgn, const size_t rowEnd) const;
+    double getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const;
 };
 
 #endif

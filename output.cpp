@@ -2,7 +2,7 @@
  * @file        output.cpp
  *
  * @project     colDataUtil
- * @version     0.3
+ * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
@@ -20,21 +20,26 @@
  */
 void Output::output(CmdArgs::Args* argsP) {
     printInputDataInfo(argsP->getFileInP()->getFileLocation(),
-                       argsP->getFileInP()->getDataColTotal(),
-                       argsP->getFileInP()->getDataRowTotal(),
-                       argsP->getFileInP()->getDataDlmType());
+                       argsP->getColumnP()->getDataColTotal(),
+                       argsP->getRowP()->getDataRowTotal(),
+                       argsP->getFileInP()->getDataDlmType(),
+                       argsP->getTimestepP()->getDataTimestepRange());
 
     if (argsP->getCalcP()) {
         if (!argsP->getFileOutP()) {
-            printer(argsP->getRowP()->getRowRange(),
-                    argsP->getColumnP()->getDoubleColSet(),
+            printer(argsP->getRowP()->getRange(),
+                    argsP->getTimestepP()->isTimestepConsistent(),
+                    argsP->getTimestepP()->getRange(),
+                    argsP->getColumnP()->getDataDoubleColSet(),
                     argsP->getCalcP()->getCalcIdSet());
         }
         else {
             for (const string& fileOut : argsP->getFileOutP()->getFileLocSet()){
-                filer(fileOut,
-                      argsP->getRowP()->getRowRange(),
-                      argsP->getColumnP()->getDoubleColSet(),
+                filer(fileOut, argsP->getFileInP()->getFileLocation(),
+                      argsP->getRowP()->getRange(),
+                      argsP->getTimestepP()->isTimestepConsistent(),
+                      argsP->getTimestepP()->getRange(),
+                      argsP->getColumnP()->getDataDoubleColSet(),
                       argsP->getCalcP()->getCalcIdSet());
                 cout<< "\nThe output has been written to \"" << fileOut << "\""
                     << endl;
@@ -43,12 +48,12 @@ void Output::output(CmdArgs::Args* argsP) {
     }
     if (argsP->getPrintDataP()) {
         dataPrinter(argsP->getPrintDataP()->getDelimiter(),
-                    argsP->getFileInP()->getDataRowTotal());
+                    argsP->getRowP()->getDataRowTotal());
     }
     if (argsP->getFileDataP()) {
         dataFiler(argsP->getFileDataP()->getFileDataName(),
                   argsP->getFileDataP()->getDelimiter(),
-                  argsP->getFileInP()->getDataRowTotal());
+                  argsP->getRowP()->getDataRowTotal());
         cout<< "\nThe output has been written to \""
             << argsP->getFileDataP()->getFileDataName() << "\"" << endl;
     }
@@ -62,7 +67,8 @@ void Output::output(CmdArgs::Args* argsP) {
  */
 void Output::printInputDataInfo(const string& fileInName,
         const int dataColTotal, const size_t dataRowTotal,
-        const Delimitation dataDlmType) {
+        const Delimitation dataDlmType,
+        const tuple<bool, size_t, size_t> dataTimestepRange) {
     cout<< left << '\n' << string(55, '=') << "\n "
         << "Input file: " << fileInName << '\n' << string(55, '=') << "\n\n"
         << setw(20) << " Total columns:" << dataColTotal << '\n'
@@ -72,16 +78,16 @@ void Output::printInputDataInfo(const string& fileInName,
             ((dataDlmType == Delimitation::spacedAndDelimited) ?
                 "whitespace and delimiter" : "whitespace")) << '\n' << endl;
 
-    if (!IntV::getSetP().empty()) {
-        cout<< " Timestep column:\n" << string(30, '-') << '\n';
-        for (IntV* iVP : IntV::getSetP()) {
-            cout<< setw(3) << right << iVP->getColNo() << ". "
-                << left << iVP->getColName() << '\n';
-        }
-        cout << '\n';
+    if (std::get<0>(dataTimestepRange)) {
+        cout<< " Timestep column:\n" << string(30, '-') << '\n'
+            << setw(3) << right << IntV::getOneP(0)->getColNo() << ". "
+            << left << IntV::getOneP(0)->getColName() << '\n'
+            << "\n Available timestep range is from "
+            << std::get<1>(dataTimestepRange) << " to "
+            << std::get<2>(dataTimestepRange) << ".\n\n";
     }
     else {
-        cout<< " No timestep column was found.\n\n";
+        cout<< " No consistent timestep column was found.\n\n";
     }
     cout<< " Data columns:\n"
         << string(30, '-') << "\n";
@@ -101,20 +107,26 @@ void Output::printInputDataInfo(const string& fileInName,
  */
 void Output::printer(
         const tuple<size_t, size_t> rowRange,
+        const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet) {
-    // vector<int> timesteps{IntV::getOneP(0)->getData()};
-    size_t rowBgn, rowEnd;
-    tie(rowBgn, rowEnd) = rowRange;
+    size_t rBgn, rEnd, tBgn, tEnd;
+    tie(rBgn, rEnd) = rowRange;
+    tie(tBgn, tEnd) = timestepRange;
 
     // Set cout properties
     cout.setf(ios_base::scientific);
     cout.precision(numeric_limits<double>::max_digits10);
 
     // Print heading
-    cout<< " Calculation results for "
-        << "rows " << to_string(rowBgn) << " to " << to_string(rowEnd) << '\n'
-        << string(55, '=') << '\n';
+    cout<< " Calculation results for:\n"
+        << " Rows      => " << to_string(rBgn) << " to " << to_string(rEnd)
+        <<'\n';
+    if (timestepConsistent) {
+        cout << " Timesteps => " << to_string(tBgn) << " to " << to_string(tEnd)
+        <<'\n';
+    }
+    cout<< string(55, '=') << '\n';
 
     // Print calculations
     for (const int colNo : doubleColSet) {
@@ -128,7 +140,7 @@ void Output::printer(
             calcType calc{mapCalcIdToCalc<int>.at(id)};
             cout<< ' ' << left << setw(22)
                 << CalcFnc::mapCalcToStr<int>.at(calc)
-                << " = " << calc(colNo, rowBgn, rowEnd) << '\n';
+                << " = " << calc(colNo, rBgn, rEnd) << '\n';
         }
     }
     cout << endl;
@@ -138,25 +150,32 @@ void Output::printer(
  * Perform all the selected operations on all the selected columns and print the
  * results to the terminal.
  */
-void Output::filer(const string& fileOutStr,
+void Output::filer(const string& fileOutName,  const string& fileInName,
         const tuple<size_t, size_t> rowRange,
+        const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet) {
-    // vector<int> timesteps{IntV::getOneP(0)->getData()};
-    size_t rowBgn, rowEnd;
-    tie(rowBgn, rowEnd) = rowRange;
+    size_t rBgn, rEnd, tBgn, tEnd;
+    tie(rBgn, rEnd) = rowRange;
+    tie(tBgn, tEnd) = timestepRange;
 
     // Open file and set properties
     ofstream fOut;
-    fOut.open(fileOutStr, ios_base::app);
+    fOut.open(fileOutName, ios_base::app);
     if(!fOut) { throw runtime_error(errorOutputFile); }
     fOut.setf(ios_base::scientific);
     fOut.precision(numeric_limits<double>::max_digits10);
 
     // File heading
-    fOut<< "\nCalculation results for "
-        << "rows " << to_string(rowBgn) << " to " << to_string(rowEnd)
-        << '\n' << string(70, '`') << '\n';
+    fOut<< "\nInput file: " << fileInName
+        << "\nCalculation results for:\n"
+        << " Rows      => " << to_string(rBgn) << " to " << to_string(rEnd)
+        <<'\n';
+    if (timestepConsistent) {
+        fOut << " Timesteps => " << to_string(tBgn) << " to " << to_string(tEnd)
+        <<'\n';
+    }
+    fOut<< string(70, '`') << '\n';
 
     // File subheadings
     fOut << "Calculations\\Columns,";
@@ -169,7 +188,7 @@ void Output::filer(const string& fileOutStr,
         calcType calc{mapCalcIdToCalc<int>.at(id)};
         fOut << '\n' << CalcFnc::mapCalcToStr<int>.at(calc) << ',';
         for (const int colNo : doubleColSet) {
-            fOut << calc(colNo, rowBgn, rowEnd) << ',';
+            fOut << calc(colNo, rBgn, rEnd) << ',';
         }
     }
     fOut << '\n';
@@ -234,21 +253,3 @@ void Output::dataFiler(const string& fileName, const string& dlm,
     fOut << flush;
     fOut.close();
 }
-
-//----------------------------------------------------------------------------//
-//******************** Printing information on loaded data *******************//
-//----------------------------------------------------------------------------//
-/*
- * Print the total timesteps available in the file, assuming that
- * the first column of the loaded data is an integer representation of the
- * number of timesteps.
- */
-/*
-void ColData::printAvailableTimestepRange() {
-    vector<int> timesteps{IntV::getOneP(0)->getData()};
-    cout << timesteps.size() << '\n';
-    cout    << "\nThe timestep range available in the source file is from "
-            << timesteps.at(0) << " to ";
-            // << timesteps.at(timesteps.size()-1) << " timesteps." << endl;
-}
-*/

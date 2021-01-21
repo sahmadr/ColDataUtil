@@ -2,7 +2,7 @@
  * @file        cmdArgs.cpp
  *
  * @project     colDataUtil
- * @version     0.3
+ * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
@@ -46,27 +46,24 @@ Args::Args(int argc, char* argv[]) :
                         else { throw invalid_argument(errorFileInNamedAlready);}
                         break;
                     case Option::function:
-                        cout << "Found key = function" << endl;
                         if (!m_calcP) {
                             m_calcP = new Calc(s_c, m_argc, m_argv);
                         }
                         else {
-                            m_calcP->setCalcIdSet(s_c, m_argc, m_argv);
+                            m_calcP->init(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::column:
-                        cout << "Found key = column" << endl;
                         if (!m_columnP) {
                             m_columnP = new Column(s_c, m_argc, m_argv);
                         }
-                        else { m_columnP->setColInputSets(s_c, m_argc, m_argv);}
+                        else { m_columnP->init(s_c, m_argc, m_argv);}
                         break;
                     case Option::row:
-                        cout << "Found key = row" << endl;
                         if (!m_rowP) {
                             m_rowP = new Row(s_c, m_argc, m_argv);
                         }
-                        else if (std::get<1>(m_rowP->getRowRange()) == 0) {
+                        else if (std::get<1>(m_rowP->getRange()) == 0) {
                             m_rowP->setRowEnd(s_c, m_argc, m_argv);
                         }
                         else {
@@ -74,37 +71,31 @@ Args::Args(int argc, char* argv[]) :
                         }
                         break;
                     case Option::timestep:
-                        cout << "Found key = timestep" << endl;
                         if (!m_timestepP) {
                             m_timestepP = new Timestep(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::fileOut:
-                        cout << "Found key = fileOut" << endl;
                         if (!m_fileOutP) {
                             m_fileOutP = new FileOut(s_c, m_argc, m_argv);
                         }
                         else {
-                            m_fileOutP->setFileLocSet(s_c, m_argc, m_argv);
+                            m_fileOutP->init(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::printData:
-                        cout << "Found key = printData" << endl;
                         if (!m_printDataP) {
                             m_printDataP = new PrintData(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::fileData:
-                        cout << "Found key = fileData" << endl;
                         if (!m_fileDataP) {
                             m_fileDataP = new FileData(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::help:
-                        cout << "Found key = help" << endl;
                         break;
                     case Option::version:
-                        cout << "Found key = version" << endl;
                         break;
                 }
             }
@@ -126,32 +117,39 @@ Args::Args(int argc, char* argv[]) :
  * turn may or may not call the ColData namespace methods.
  */
 void Args::process() {
-    // Mandatory argument members
+    // Before loading file ---------------------------------------------------//
     if (!m_delimiterP) { m_delimiterP = new Delimiter(); }
-
     if (!m_fileInP) { throw invalid_argument(errorFileInMissing); }
-    m_fileInP->process(m_delimiterP->getDelimiter());
-
     if (!m_calcP && (m_columnP || m_timestepP || m_rowP || m_fileOutP)) {
         m_calcP = new Calc();
-        m_calcP->process();
     }
-
     if (!m_columnP) { m_columnP = new Column(); }
-    m_columnP->process();
+    // if (m_rowP && m_timestepP) { throw logic_error(errorRowTimestepConflict); }
+    if (!m_rowP) { m_rowP = new Row(); }
+    if (!m_timestepP) { m_timestepP = new Timestep(); }
 
-    if (m_timestepP && m_rowP) {
-        throw logic_error(errorRowTimestepConflict);
-    }
-    else if (m_timestepP) {
-        //m_timestepP->process();
-    }
-    else {
-        if (!m_rowP) {
-            m_rowP = new Row();
-        }
-        m_rowP->process(m_fileInP);
-    }
+    // Load file and save the returned parameters ----------------------------//
+    int dataColTotal;
+    size_t dataRowTotal;
+    Delimitation dataDlmType;
+    tuple<bool, size_t, size_t> dataTimestepRange;
+
+    tie(dataDlmType, dataColTotal, dataRowTotal, dataTimestepRange)
+        = ColData::loadData(m_fileInP->getFileLocation(),
+                            m_delimiterP->getDelimiter());
+
+    m_fileInP->importDataDlmType(dataDlmType);
+    m_columnP->importDataColTotal(dataColTotal);
+    m_rowP->importDataRowTotal(dataRowTotal);
+    m_timestepP->importDataTimestepRange(dataTimestepRange);
+
+    // After loading file ----------------------------------------------------//
+    // Mandatory argument members
+    if (m_calcP) { m_calcP->process(); }
+    m_columnP->process();
+    m_rowP->process();
+    m_timestepP->process();
+    resolveRowVsTimestep();
 
     // Optional argument members
     if (m_fileOutP) { m_fileOutP->process(m_fileInP->getFileLocation()); }
@@ -175,6 +173,46 @@ const FileOut* Args::getFileOutP() const        { return m_fileOutP; }
 const PrintData* Args::getPrintDataP() const    { return m_printDataP; }
 const FileData* Args::getFileDataP() const      { return m_fileDataP; }
 
+void Args::resolveRowVsTimestep() {
+    bool rBgnDef, rEndDef, tBgnDef, tEndDef;
+    tie(rBgnDef, rEndDef) = m_rowP->getDefStatus();
+    tie(tBgnDef, tEndDef) = m_timestepP->getDefStatus();
+
+    if ((rBgnDef && tBgnDef) || (rEndDef && tEndDef)) {
+        throw logic_error(errorRowTimestepConflict);
+    }
+
+    if (!rBgnDef && !tBgnDef) {
+        m_timestepP->setTimestepBgn(
+            std::get<1>(m_timestepP->getDataTimestepRange()));
+    }
+    else if (tBgnDef) {
+        m_rowP->setRowBgn(
+            IntV::getOneP(0)->getRow(std::get<0>(m_timestepP->getRange())));
+    }
+    else {
+        if (m_timestepP->isTimestepConsistent()) {
+            m_timestepP->setTimestepBgn(
+                IntV::getOneP(0)->getData()[std::get<0>(m_rowP->getRange())]);
+        }
+    }
+
+    if (!rEndDef && !tEndDef) {
+        m_rowP->setRowEnd(m_rowP->getDataRowTotal() - 1);
+        m_timestepP->setTimestepEnd(
+            std::get<2>(m_timestepP->getDataTimestepRange()));
+    }
+    else if (tEndDef) {
+        m_rowP->setRowEnd(
+            IntV::getOneP(0)->getRow(std::get<1>(m_timestepP->getRange())));
+    }
+    else {
+        if (m_timestepP->isTimestepConsistent()) {
+            m_timestepP->setTimestepEnd(
+                IntV::getOneP(0)->getData()[std::get<1>(m_rowP->getRange())]);
+        }
+    }
+}
 
 //----------------------------------------------------------------------------//
 //**************************** CmdArgs::Delimiter ****************************//
@@ -198,13 +236,12 @@ FileIn::FileIn(int c, int argC, const vector<string>& argV) {
 FileIn::FileIn(const vector<string>& argV) {
     m_fileLocation = argV[Args::setCount(1)];
 }
-void FileIn::process(const string& dlm) {
-    tie(m_dataColTotal, m_dataRowTotal, m_dataDlmType)
-        = ColData::loadData(m_fileLocation, dlm);
+
+void FileIn::importDataDlmType(Delimitation dataDlmType) {
+    m_dataDlmType = dataDlmType;
 }
+
 const string& FileIn::getFileLocation() const   { return m_fileLocation; }
-int FileIn::getDataColTotal() const             { return m_dataColTotal; }
-size_t FileIn::getDataRowTotal() const          { return m_dataRowTotal; }
 Delimitation FileIn::getDataDlmType() const     { return m_dataDlmType; }
 
 //----------------------------------------------------------------------------//
@@ -212,9 +249,9 @@ Delimitation FileIn::getDataDlmType() const     { return m_dataDlmType; }
 //----------------------------------------------------------------------------//
 
 Calc::Calc(int c, int argC, const vector<string>& argV) {
-    setCalcIdSet(c, argC, argV);
+    init(c, argC, argV);
 }
-void Calc::setCalcIdSet(int c, int argC, const vector<string>& argV) {
+void Calc::init(int c, int argC, const vector<string>& argV) {
     while (c+1 < argC && argV[c+1][0] != '-') {
         Args::setCount(++c);
         std::unordered_map<string, CalcId>::const_iterator
@@ -245,9 +282,9 @@ const vector<CalcId>& Calc::getCalcIdSet() const {
 //----------------------------------------------------------------------------//
 
 Column::Column(int c, int argC, const vector<string>& argV) {
-    setColInputSets(c, argC, argV);
+    init(c, argC, argV);
 }
-void Column::setColInputSets(int c, int argC, const vector<string>& argV) {
+void Column::init(int c, int argC, const vector<string>& argV) {
     while (c+1 < argC && argV[c+1][0] != '-') {
         Args::setCount(++c);
         bool inputIsInteger{true};
@@ -259,11 +296,14 @@ void Column::setColInputSets(int c, int argC, const vector<string>& argV) {
         else { m_strInputColSet.push_back(inputStr); }
     }
 }
+void Column::importDataColTotal(int dataColTotal) {
+    m_dataColTotal = dataColTotal;
+}
 void Column::process() {
     // If no number or name is entered after option flag, select all columns
     if (m_intInputColSet.empty() && m_strInputColSet.empty()) {
         for (ColData::DoubleV* dVP : ColData::DoubleV::getSetP()) {
-            m_doubleColSet.push_back(dVP->getColNo());
+            m_dataDoubleColSet.push_back(dVP->getColNo());
         }
     }
     else {
@@ -291,22 +331,25 @@ void Column::process() {
                     colExists = strInput == dVP->getColName();
                 }
             }
-            if (colExists) { m_doubleColSet.push_back(dVP->getColNo()); }
+            if (colExists) { m_dataDoubleColSet.push_back(dVP->getColNo()); }
         }
         // If the none of the inputs match any column in the given file
-        if (m_doubleColSet.empty()) {
+        if (m_dataDoubleColSet.empty()) {
             throw invalid_argument(errorColNamesInvalid);
         }
     }
-}
-const vector<int>& Column::getDoubleColSet() const {
-    return m_doubleColSet;
 }
 const vector<int>& Column::getIntInputColSet() const {
     return m_intInputColSet;
 }
 const vector<string>& Column::getStrInputColSet() const {
     return m_strInputColSet;
+}
+int Column::getDataColTotal() const {
+    return m_dataColTotal;
+}
+const vector<int>& Column::getDataDoubleColSet() const {
+    return m_dataDoubleColSet;
 }
 
 //----------------------------------------------------------------------------//
@@ -321,6 +364,7 @@ Row::Row(int c, int argC, const vector<string>& argV) {
             }
             m_rowBgn = stoi(argV[c+1]),
             m_rowEnd = stoi(argV[c+2]);
+            m_rowBgnDefined = m_rowEndDefined = true;
             Args::setCount(c+2);
         }
         else {
@@ -328,6 +372,7 @@ Row::Row(int c, int argC, const vector<string>& argV) {
                 throw invalid_argument(errorRowRangeInvalid);
             }
             m_rowBgn = stoi(argV[Args::setCount(++c)]);
+            m_rowBgnDefined = true;
         }
     }
 }
@@ -337,19 +382,33 @@ void Row::setRowEnd(int c, int argC, const vector<string>& argV) {
             throw invalid_argument(errorRowRangeInvalid);
         }
         m_rowEnd = stoi(argV[Args::setCount(++c)]);
+        m_rowEndDefined = true;
     }
 }
-void Row::process(const FileIn* fileIn) {
-    if (m_rowEnd == 0) {
-        m_rowEnd = fileIn->getDataRowTotal() - 1;
+void Row::setRowBgn(size_t val) { m_rowBgn = val; }
+void Row::setRowEnd(size_t val) { m_rowEnd = val; }
+void Row::importDataRowTotal(size_t dataRowTotal) {
+    m_dataRowTotal = dataRowTotal;
+}
+void Row::process() {
+    if (m_rowBgnDefined) {
+        if (m_rowBgn >= (m_dataRowTotal - 1)) {
+            throw invalid_argument(errorRowRangeInvalid);
+        }
     }
-    else if (m_rowEnd > (fileIn->getDataRowTotal() - 1)
-            || (m_rowEnd <= m_rowBgn)) {
+    if (m_rowEndDefined) {
+        if (m_rowEnd > (m_dataRowTotal - 1)) {
+            throw invalid_argument(errorRowRangeInvalid);
+        }
+    }
+    if (m_rowBgnDefined && m_rowEndDefined && m_rowBgn >= m_rowEnd) {
         throw invalid_argument(errorRowRangeInvalid);
     }
 }
-const tuple<size_t, size_t> Row::getRowRange() const {
-    return {m_rowBgn, m_rowEnd};
+size_t Row::getDataRowTotal() const { return m_dataRowTotal; }
+tuple<size_t, size_t> Row::getRange() const { return {m_rowBgn, m_rowEnd}; }
+tuple<bool, bool> Row::getDefStatus() const {
+    return {m_rowBgnDefined, m_rowEndDefined};
 }
 
 //----------------------------------------------------------------------------//
@@ -360,35 +419,92 @@ Timestep::Timestep(int c, int argC, const vector<string>& argV) {
     if (c+1 < argC && argV[c+1][0] != '-') {
         if (c+2 < argC && argV[c+2][0] != '-') {
             if (stoi(argV[c+1]) < 0 || stoi(argV[c+2]) <= 0){
-                throw invalid_argument(errorRowRangeInvalid);
+                throw invalid_argument(errorTimestepRangeInvalid);
             }
             m_timestepBgn = stoi(argV[c+1]),
             m_timestepEnd = stoi(argV[c+2]);
+            m_timestepBgnDefined = m_timestepEndDefined = true;
             Args::setCount(c+2);
         }
-        else { m_timestepBgn = stoi(argV[Args::setCount(++c)]); }
+        else {
+            if (stoi(argV[c+1]) < 0) {
+                throw invalid_argument(errorTimestepRangeInvalid);
+            }
+            m_timestepBgn = stoi(argV[Args::setCount(++c)]);
+            m_timestepBgnDefined = true;
+        }
     }
 }
-void Timestep::process(const FileIn* fileIn) {
-    if (m_timestepEnd == 0) {
-        // m_timestepEnd = fileIn->getDataRowTotal();
+void Timestep::setTimestepEnd(int c, int argC, const vector<string>& argV) {
+    if (c+1 < argC && argV[c+1][0] != '-') {
+        if (stoi(argV[c+1]) <= 0) {
+            throw invalid_argument(errorTimestepRangeInvalid);
+        }
+        m_timestepEnd = stoi(argV[Args::setCount(++c)]);
+        m_timestepEndDefined = true;
     }
-    else if (m_timestepEnd > fileIn->getDataRowTotal()
-            || (m_timestepEnd <= m_timestepBgn)) {
-        throw invalid_argument(errorRowRangeInvalid);
-    }
-    cout << "timestepBgn = " << m_timestepBgn << endl;
-    cout << "timestepEnd = " << m_timestepEnd << endl;
 }
+void Timestep::setTimestepBgn(size_t val) { m_timestepBgn = val; }
+void Timestep::setTimestepEnd(size_t val) { m_timestepEnd = val; }
+void Timestep::importDataTimestepRange(
+        tuple<bool, size_t, size_t> dataTimestepRange) {
+    m_dataTimestepRange = dataTimestepRange;
+}
+void Timestep::process() {
+    if (std::get<0>(m_dataTimestepRange)) {// is input timestep range consistent
+        if (m_timestepBgnDefined) {
+            if (m_timestepBgn < std::get<1>(m_dataTimestepRange)) {
+                throw invalid_argument(errorTimeStepTooSmall);
+            }
+            if (m_timestepBgn >= std::get<2>(m_dataTimestepRange)) {
+                throw invalid_argument(errorTimeStepTooLarge);
+            }
+        }
+        // else {
+        //     m_timestepBgn = std::get<1>(m_dataTimestepRange);
+        // }
+        if (m_timestepEndDefined) {
+            if (m_timestepEnd <= std::get<1>(m_dataTimestepRange)) {
+                throw invalid_argument(errorTimeStepTooSmall);
+            }
+            if (m_timestepEnd > std::get<2>(m_dataTimestepRange)) {
+                throw invalid_argument(errorTimeStepTooLarge);
+            }
+        }
+        // else {
+        //     m_timestepEnd = std::get<2>(m_dataTimestepRange);
+        // }
+        if (m_timestepBgnDefined && m_timestepEndDefined
+            && m_timestepBgn >= m_timestepEnd) {
+            throw invalid_argument(errorTimestepRangeInvalid);
+        }
+        m_timestepConsistent = true;
+    }
+    else {
+        if (m_timestepBgnDefined || m_timestepEndDefined) {
+            throw logic_error(errorDataTimestepInconsistent);
+        }
+    }
+}
+tuple<bool, size_t, size_t> Timestep::getDataTimestepRange() const {
+    return m_dataTimestepRange;
+}
+tuple<size_t, size_t> Timestep::getRange() const {
+    return {m_timestepBgn, m_timestepEnd};
+}
+tuple<bool, bool> Timestep::getDefStatus() const {
+    return {m_timestepBgnDefined, m_timestepEndDefined};
+}
+bool Timestep::isTimestepConsistent() const { return m_timestepConsistent; }
 
 //----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileOut *****************************//
 //----------------------------------------------------------------------------//
 
 FileOut::FileOut(int c, int argC, const vector<string>& argV) {
-    setFileLocSet(c, argC, argV);
+    init(c, argC, argV);
 }
-void FileOut::setFileLocSet(int c, int argC, const vector<string>& argV) {
+void FileOut::init(int c, int argC, const vector<string>& argV) {
     while (c+1 < argC && argV[c+1][0] != '-') {
         Args::setCount(++c);
         m_fileOutLocSet.push_back(argV[c]+".csv");
@@ -442,50 +558,3 @@ void FileData::process(const string& fileInName) {
 }
 const string& FileData::getFileDataName() const { return m_fileDataName; }
 const string& FileData::getDelimiter() const    { return m_delimiter; }
-
-//----------------------------------------------------------------------------//
-//**************************** CmdArgs::Timestep *****************************//
-//----------------------------------------------------------------------------//
-/*
- * Test the validity of the input timestep begin and end values, assuming that
- * the first column of the loaded data is an integer representation of the
- * number of timesteps.
- */
-/*
-void testInputTimestep(const size_t timestepBgn,
-        const size_t timestepEnd) {
-    vector<int> timesteps{IntV::getOneP(0)->getData()};
-    if (timestepBgn < static_cast<size_t>(timesteps[0])) {
-        throw runtime_error(errorTimeStepTooSmall);
-    }
-    if (timestepEnd > timesteps.size()) {
-        throw runtime_error(errorTimeStepTooLarge);
-    }
-} */
-
-
-//----------------------------------------------------------------------------//
-/*
-FileIn::FileIn(int c, int argC, const vector<string>& argV) {
-    if (c+1 < argC && argV[c+1][0] != '-') {
-        if (c+2 < argC && argV[c+2][0] != '-') {
-            m_fileLocation = argV[c+1],
-            m_delimiter = argV[c+2];
-            Args::setCount(c+2);
-        }
-        else { m_fileLocation = argV[Args::setCount(++c)]; }
-    }
-    else { throw invalid_argument(errorFileInNameMissing); }
-}
-FileIn::FileIn(int argC, const vector<string>& argV) {
-    if (argC > 2 && argV[2][0] != '-') {
-        m_fileLocation = argV[1];
-        m_delimiter = argV[2];
-        Args::setCount(2);
-    }
-    else { m_fileLocation = argV[Args::setCount(1)]; }
-}
-void FileIn::process() { ColData::loadData(m_fileLocation, m_delimiter); }
-const string& FileIn::getFileLocation() const { return m_fileLocation; }
-const string& FileIn::getDelimiter() const { return m_delimiter; }
-*/

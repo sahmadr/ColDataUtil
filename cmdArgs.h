@@ -2,7 +2,7 @@
  * @file        cmdArgs.h
  *
  * @project     colDataUtil
- * @version     0.3
+ * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
@@ -28,9 +28,6 @@ class CmdArgs::Args {
     const int               m_argc;         // total number of arguments
     const vector<string>    m_argv;         // complete set of arguments
     const string            m_programName;  // program name
-    Delimitation            m_dataDlmType;  // data delimitation type
-    int                     m_dataColTotal; // total number of columns
-    size_t                  m_dataRowTotal; // total number of rows
     Delimiter*              m_delimiterP;   // delimiter
     FileIn*                 m_fileInP;      // file with data to be processed
     Calc*                   m_calcP;        // value functions to be calculated
@@ -52,9 +49,6 @@ class CmdArgs::Args {
     static int setCount(int newCount);
     static int getCount();
 
-    void setDataColTotal(int dataColTotal) { m_dataColTotal = dataColTotal; }
-    void setDataDlmType(Delimitation dataDlmType) {m_dataDlmType = dataDlmType;}
-
     int getArgC() const;
     const vector<string>& getArgV() const;
     const string getProgramName() const;
@@ -68,6 +62,8 @@ class CmdArgs::Args {
     const FileOut* getFileOutP() const;
     const PrintData* getPrintDataP() const;
     const FileData* getFileDataP() const;
+
+    void resolveRowVsTimestep();
 };
 
 //----------------------------------------------------------------------------//
@@ -94,10 +90,7 @@ class CmdArgs::Delimiter {
 class CmdArgs::FileIn {
   private:
     string          m_fileLocation{""};
-    int             m_dataColTotal{0};
-    size_t          m_dataRowTotal{0};
     Delimitation    m_dataDlmType{Delimitation::undefined};
-
 
     FileIn() = delete;
     FileIn(const FileIn&) = delete;
@@ -106,10 +99,10 @@ class CmdArgs::FileIn {
   public:
     explicit FileIn(int c, int argC, const vector<string>& argV);
     explicit FileIn(const vector<string>& argV);
-    void process(const string& delimiter);
+
+    void importDataDlmType(Delimitation dataDlmType);
+
     const string& getFileLocation() const;
-    int getDataColTotal() const;
-    size_t getDataRowTotal() const;
     Delimitation getDataDlmType() const;
 };
 
@@ -127,8 +120,11 @@ class CmdArgs::Calc {
   public:
     explicit Calc() = default;
     explicit Calc(int c, int argC, const vector<string>& argV);
-    void setCalcIdSet(int c, int argC, const vector<string>& argV);
+
+    void init(int c, int argC, const vector<string>& argV);
+
     void process();
+
     const vector<CmdArgs::CalcId>& getCalcIdSet() const;
 };
 
@@ -140,7 +136,8 @@ class CmdArgs::Column {
   private:
     vector<int>     m_intInputColSet{};
     vector<string>  m_strInputColSet{};
-    vector<int>     m_doubleColSet{};
+    int             m_dataColTotal{0};
+    vector<int>     m_dataDoubleColSet{};
 
     Column(const Column&) = delete;
     Column& operator=(const Column&) = delete;
@@ -148,11 +145,16 @@ class CmdArgs::Column {
   public:
     explicit Column() = default;
     explicit Column(int c, int argC, const vector<string>& argV);
-    void setColInputSets(int c, int argC, const vector<string>& argV);
+
+    void init(int c, int argC, const vector<string>& argV);
+    void importDataColTotal(int dataColTotal);
+
     void process();
-    const vector<int>& getDoubleColSet() const;
+
     const vector<int>& getIntInputColSet() const;
     const vector<string>& getStrInputColSet() const;
+    int getDataColTotal() const;
+    const vector<int>& getDataDoubleColSet() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -161,8 +163,11 @@ class CmdArgs::Column {
 
 class CmdArgs::Row {
   private:
+    bool    m_rowBgnDefined{false};
+    bool    m_rowEndDefined{false};
     size_t  m_rowBgn{0};
     size_t  m_rowEnd{0};
+    size_t  m_dataRowTotal{0};
 
     Row(const Row&) = delete;
     Row& operator=(const Row&) = delete;
@@ -170,9 +175,17 @@ class CmdArgs::Row {
   public:
     explicit Row() = default;
     explicit Row(int c, int argC, const vector<string>& argV);
-    void process(const FileIn* fileIn);
     void setRowEnd(int c, int argC, const vector<string>& argV);
-    const tuple<size_t, size_t> getRowRange() const;
+
+    void setRowBgn(size_t val);
+    void setRowEnd(size_t val);
+    void importDataRowTotal(size_t dataRowTotal);
+
+    void process();
+
+    size_t getDataRowTotal() const;
+    tuple<size_t, size_t> getRange() const;
+    tuple<bool, bool> getDefStatus() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -181,17 +194,31 @@ class CmdArgs::Row {
 
 class CmdArgs::Timestep {
   private:
+    bool    m_timestepBgnDefined{false};
+    bool    m_timestepEndDefined{false};
     size_t  m_timestepBgn{0};
     size_t  m_timestepEnd{0};
+    bool    m_timestepConsistent{false};
+    tuple<bool, size_t, size_t> m_dataTimestepRange{0,0,0};
 
-    Timestep() = delete;
     Timestep(const Timestep&) = delete;
     Timestep& operator=(const Timestep&) = delete;
 
   public:
+    explicit Timestep() = default;
     explicit Timestep(int c, int argC, const vector<string>& argV);
-    void process(const FileIn* fileIn);
-    const tuple<size_t, size_t> getTimestepRange() const;
+    void setTimestepEnd(int c, int argC, const vector<string>& argV);
+
+    void setTimestepBgn(size_t val);
+    void setTimestepEnd(size_t val);
+    void importDataTimestepRange(tuple<bool, size_t, size_t> dataTimestepRange);
+
+    void process();
+
+    tuple<bool, size_t, size_t> getDataTimestepRange() const;
+    tuple<size_t, size_t> getRange() const;
+    tuple<bool, bool> getDefStatus() const;
+    bool isTimestepConsistent() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -208,7 +235,7 @@ class CmdArgs::FileOut {
 
   public:
     explicit FileOut(int c, int argC, const vector<string>& argV);
-    void setFileLocSet(int c, int argC, const vector<string>& argV);
+    void init(int c, int argC, const vector<string>& argV);
     void process(const string& fileInName);
     const vector<string> getFileLocSet() const;
 };

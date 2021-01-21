@@ -2,7 +2,7 @@
  * @file        colData.cpp
  *
  * @project     colDataUtil
- * @version     0.3
+ * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
@@ -31,35 +31,56 @@ IntV::IntV(int colNo, string colName) :
     }
     s_intVSetP.push_back(this);
 }
+void IntV::addValue(int value)          { m_data.push_back(value); }
+void IntV::insertColNoSet(int colNo)    { s_intVColNoSet.insert(colNo); }
+
 int IntV::getId() const                 { return m_id; }
 int IntV::getColNo() const              { return m_colNo; }
 const string& IntV::getColName() const  { return m_colName; }
 int IntV::getCol(int colNo) const       { return colNo = m_colNo; }
 string& IntV::getCol(string& colName) const { return colName = m_colName; }
 const vector<int>& IntV::getData() const{ return m_data; }
-void IntV::addValue(int value)          { m_data.push_back(value); }
-void IntV::insertColNoSet(int colNo)    { s_intVColNoSet.insert(colNo); }
+tuple<bool, size_t, size_t> IntV::getTimestepColRange() const {
+    // bool represents timestep column consistency (true for consistent)
+    // first size_t is beginning timestep and last one is final timestep
+    if (m_data[0] < 0) {
+        return {false, 0, 0};
+    }
+    for (size_t i=1; i<m_data.size(); ++i) {
+        if (m_data[i] <= m_data[i-1]) {
+            return {false, 0, 0};
+        }
+    }
+    return {true, m_data[0], m_data[m_data.size() - 1]};
+}
+size_t IntV::getRow(int timestepVal) const {
+    return std::distance(
+        m_data.cbegin(), std::find(m_data.cbegin(), m_data.cend(), timestepVal)
+    );
+}
+
 int IntV::getTotal()                    { return s_total; }
 set<int>& IntV::getColNoSet()           { return s_intVColNoSet; }
 vector<IntV*>& IntV::getSetP()          { return s_intVSetP; }
 IntV* IntV::getOneP(const int id)       { return s_intVSetP[id]; }
-// IntV* IntV::getOnePFromCol(const int inputColNo) {
-//     int id{-1};
-//     for (IntV* iVP : s_intVSetP) {
-//         if (inputColNo == iVP->m_colNo) { id = iVP->m_id; }
-//     }
-//     if (id<0) { throw runtime_error(errorColNoAbsent); }
-//     return s_intVSetP[id];
-// }
-// IntV* IntV::getOnePFromCol(const string inputColName) {
-//     int id{-1};
-//     for (IntV* iVP : s_intVSetP) {
-//         if (inputColName == iVP->m_colName) { id = iVP->m_id; }
-//     }
-//     if (id<0) { throw runtime_error(errorColNameAbsent); }
-//     return s_intVSetP[id];
-// }
-
+/*
+IntV* IntV::getOnePFromCol(const int inputColNo) {
+    int id{-1};
+    for (IntV* iVP : s_intVSetP) {
+        if (inputColNo == iVP->m_colNo) { id = iVP->m_id; }
+    }
+    if (id<0) { throw runtime_error(errorColNoAbsent); }
+    return s_intVSetP[id];
+}
+IntV* IntV::getOnePFromCol(const string inputColName) {
+    int id{-1};
+    for (IntV* iVP : s_intVSetP) {
+        if (inputColName == iVP->m_colName) { id = iVP->m_id; }
+    }
+    if (id<0) { throw runtime_error(errorColNameAbsent); }
+    return s_intVSetP[id];
+}
+ */
 //----------------------------------------------------------------------------//
 //************************** ColData::DoubleV Class **************************//
 //----------------------------------------------------------------------------//
@@ -72,12 +93,14 @@ DoubleV::DoubleV(int colNo, string colName) :
     }
     s_doubleVSetP.push_back(this);
 }
+void DoubleV::addValue(double value)          { m_data.push_back(value); }
+void DoubleV::insertColNoSet(int colNo)       {s_doubleVColNoSet.insert(colNo);}
+
 int DoubleV::getId() const                    { return m_id; }
 int DoubleV::getColNo() const                 { return m_colNo; }
 const string& DoubleV::getColName() const     { return m_colName; }
 const vector<double>& DoubleV::getData() const{ return m_data; }
-void DoubleV::addValue(double value)          { m_data.push_back(value); }
-void DoubleV::insertColNoSet(int colNo)       {s_doubleVColNoSet.insert(colNo);}
+
 int DoubleV::getTotal()                       { return s_total; }
 set<int>& DoubleV::getColNoSet()              { return s_doubleVColNoSet; }
 vector<DoubleV*>& DoubleV::getSetP()          { return s_doubleVSetP; }
@@ -128,50 +151,54 @@ double DoubleV::getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const {
 //************************* Data loading and storage *************************//
 //----------------------------------------------------------------------------//
 /*
- * Load file and call createVectors and populateVectors functions.
+ * Load file and call all the relevant functions to process it and return all
+ * the required variables to CmdArgs::FileIn::process().
  */
-tuple<int, size_t, Delimitation> ColData::loadData(const string& fileName,
-        const string& dlm) {
-    streampos headerLinePos, dataLinePos;
-    string headerLine;
-    Delimitation headerDlmType, dataDlmType;
-    int dataColTotal;
-    size_t dataRowTotal;
-    vector<string> colNames;
-    set<int> timeStepColCandidates;
-
-    // Open file
+tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>> ColData::loadData(
+        const string& fileName, const string& dlm) {
+    // Open file -------------------------------------------------------------//
     ifstream iFile{fileName};
     if (!iFile) { throw runtime_error(errorInputFile); }
     else { cout << "File found. Program initiated." << flush; }
 
-    // Process the header
+    // Process the header ----------------------------------------------------//
+    streampos headerLinePos, dataLinePos;
     tie(headerLinePos, dataLinePos) = findLinePositions(iFile, dlm);
-    tie(headerLine, headerDlmType) = parseHeaderLine(iFile, dlm, headerLinePos);
-    tie(dataColTotal, colNames) = identifyColumnHeaders(headerLine, dlm,
-                                                        headerDlmType);
-    timeStepColCandidates = findTimestepColCandidates(dataColTotal, colNames);
-    cout << endl;
-    for (int candidate : timeStepColCandidates) {
-        cout << "candidate = " << candidate << '\n';
-    }
-    cout << endl;
 
-    // Process the data
-    dataDlmType = parseColumnData(iFile, dlm, dataLinePos);
+    string headerLine;
+    Delimitation headerDlmType;
+    tie(headerLine, headerDlmType) = parseHeaderLine(iFile, dlm, headerLinePos);
+
+    int dataColTotal;
+    vector<string> colNames;
+    tie(dataColTotal, colNames) =
+        identifyColumnHeaders(headerLine, dlm, headerDlmType);
+
+    set<int> timeStepColCandidates{
+        findTimestepColCandidates(dataColTotal, colNames)
+    };
+
+    // Process the data ------------------------------------------------------//
+    Delimitation dataDlmType = parseColumnData(iFile, dlm, dataLinePos);
     cout << "\rIn progress: Parsing column data..." << flush;
     classifyColumns(iFile, dlm, dataDlmType, dataLinePos, dataColTotal,
                     timeStepColCandidates);
 
-    // Store the data
+    // Store the data --------------------------------------------------------//
     createVectors(colNames);
     cout << "\rIn progress: Processing column data..." << flush;
-    dataRowTotal = populateVectors(iFile, dlm, dataColTotal, dataDlmType,
-                                   dataLinePos);
+    const size_t dataRowTotal{
+        populateVectors(iFile, dlm, dataColTotal, dataDlmType, dataLinePos)
+    };
     cout << '\r' << string(38, ' ') << "\n" << flush;
     iFile.close();
 
-    return {dataColTotal, dataRowTotal, dataDlmType};
+    tuple<bool, size_t, size_t> dataTimestepRange{0, 0, 0};
+    if (!IntV::getSetP().empty()) {
+        dataTimestepRange = IntV::getOneP(0)->getTimestepColRange();
+    }
+
+    return {dataDlmType, dataColTotal, dataRowTotal, dataTimestepRange};
 }
 
 /*
@@ -415,7 +442,7 @@ void ColData::createVectors(const vector<string>& colNames) {
 /*
  * Populate the column vectors by reading the respective column data from file.
  */
-int ColData::populateVectors(ifstream& iFile, const string& dlm,
+size_t ColData::populateVectors(ifstream& iFile, const string& dlm,
         const int dataColTotal, const Delimitation dataDlmType,
         const streampos dataLinePos) {
     size_t pos{0}, dataRowTotal{0}, dlmLen{dlm.length()};
@@ -477,29 +504,3 @@ int ColData::populateVectors(ifstream& iFile, const string& dlm,
     }
     return dataRowTotal;
 }
-
-//----------------------------------------------------------------------------//
-//***************** Printing and filing calculation results ******************//
-//----------------------------------------------------------------------------//
-/*
- * Return the appropriate row begin and end values.
- */
-const tuple<size_t, size_t> ColData::returnRows(const int column,
-        const size_t timestepBgn, const size_t timestepEnd) {
-    size_t rowBgn{timestepBgn - 1}, rowEnd;
-    if (timestepEnd == 0) {
-        rowEnd = DoubleV::getOnePFromCol(column)->getData().size() - 1;
-    }
-    else { rowEnd = timestepEnd - 1; }
-    return {rowBgn, rowEnd};
-}
-
-/*
- * Lower the characters of a string.
- * Source: https://en.cppreference.com/w/cpp/string/byte/tolower
- */
-/* string strToLower(string s) {
-    std::transform(s.begin(), s.end(), s.begin(),
-                    [](unsigned char c){ return std::tolower(c); });
-    return s;
-} */

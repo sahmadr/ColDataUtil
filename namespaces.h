@@ -2,7 +2,7 @@
  * @file        namespaces.h
  *
  * @project     colDataUtil
- * @version     0.3
+ * @version     0.2
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
@@ -24,6 +24,7 @@
 #include <set>
 #include <limits>
 #include <algorithm>
+#include <iterator>
 #include <cstddef>
 #include <cmath>
 
@@ -48,8 +49,8 @@ namespace ColData {
     // inline constexpr int delimiterLenLimit = 3;
     class DoubleV;
     class IntV;
-    tuple<int, size_t, Delimitation> loadData(const string& fileName,
-        const string& dlm);
+    tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>> loadData(
+        const string& fileName, const string& dlm);
     bool isNumberLine(stringV lineStr, string dlm);
     tuple<streampos, streampos> findLinePositions(ifstream& iFile,
         const string& dlm);
@@ -65,13 +66,9 @@ namespace ColData {
         const Delimitation dataDlmType, const streampos dataLinePos,
         const int colTotal, set<int>& timestepColCandidates);
     void createVectors(const vector<string>& colNames);
-    int populateVectors(ifstream& iFile, const string& dlm,
+    size_t populateVectors(ifstream& iFile, const string& dlm,
         const int dataColTotal, const Delimitation dataDlmType,
         const streampos dataLinePos);
-    void printAvailableTimestepRange();
-    const tuple<size_t, size_t> returnRows(const int column,
-        const size_t timestepBgn, const size_t timestepEnd);
-    // const string& rowTimestepsStrMaker
 }
 
 //----------------------------------------------------------------------------//
@@ -128,13 +125,16 @@ namespace CalcFnc {
 namespace Output {
     void output(CmdArgs::Args* argsP);
     void printInputDataInfo(const string& fileInName, const int dataColTotal,
-        const size_t dataRowTotal, const Delimitation dataDlmType);
+        const size_t dataRowTotal, const Delimitation dataDlmType,
+        const tuple<bool, size_t, size_t> dataTimestepRange);
     void printer(
         const tuple<size_t, size_t> rowRange,
+        const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet);
-    void filer(const string& fileOutStr,
+    void filer(const string& fileOutName, const string& fileInName,
         const tuple<size_t, size_t> rowRange,
+        const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet);
     void dataPrinter(const string& dlm, const size_t dataRowTotal);

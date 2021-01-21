@@ -2,7 +2,7 @@
  * @file        errorMsgs.h
  *
  * @project     colDataUtil
- * @version     0.3
+ * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
  *
@@ -60,10 +60,13 @@ errorRowRangeInvalid{"Requested range of rows is invalid."},
 errorRowsAlreadySpecified{"Please specify only two values for the row option."},
 errorRowTimestepConflict{"The row option and the timestep option both have "
     "been specified. Please choose only one of these options."},
+errorDataTimestepInconsistent{"The correct timestep column was not identified "
+    "from the input file or it negative values."},
+errorTimestepRangeInvalid{"Requested range of timesteps is invalid."},
 errorTimeStepTooSmall{"Invalid timestep specified. The specified timestep is "
-    "less than the smallest found in the file."},
+    "less than the smallest found in the input file."},
 errorTimeStepTooLarge{"Invalid timestep specified. The specified timestep is "
-    "larger than the largest found in the file."},
+    "larger than the largest found in the input file."},
 errorInputFile{"Input file could not be opened."},
 errorOutputFile{"Output file could not be opened."},
 
