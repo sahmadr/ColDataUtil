@@ -1,7 +1,7 @@
 /**
  * @file        cmdArgs.cpp
  *
- * @project     colDataUtil
+ * @project     ColDataUtil
  * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
@@ -25,12 +25,14 @@ Args::Args(int argc, char* argv[]) :
   m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
   m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr},
   m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr},
-  m_fileOutP{nullptr}, m_printDataP{nullptr}, m_fileDataP{nullptr} {
+  m_fileOutP{nullptr}, m_printDataP{nullptr}, m_fileDataP{nullptr},
+  m_versionP{nullptr} {
     if (argc<=1) { throw logic_error(errorNoArguments); }
     for (s_c=1; s_c<m_argc; ++s_c) {
         if (m_argv[s_c][0] == '-') {
             unordered_map<string, Option>::const_iterator
                 mapIt{mapStrToOption.find(m_argv[s_c])};
+
             if (mapIt != mapStrToOption.end()) {
                 switch (mapIt->second) {
                     case Option::delimiter:
@@ -96,6 +98,9 @@ Args::Args(int argc, char* argv[]) :
                     case Option::help:
                         break;
                     case Option::version:
+                        if (!m_versionP) {
+                            m_versionP = new Version();
+                        }
                         break;
                 }
             }
@@ -118,6 +123,7 @@ Args::Args(int argc, char* argv[]) :
  */
 void Args::process() {
     // Before loading file ---------------------------------------------------//
+    if (m_versionP) { return; }
     if (!m_delimiterP) { m_delimiterP = new Delimiter(); }
     if (!m_fileInP) { throw invalid_argument(errorFileInMissing); }
     if (!m_calcP && (m_columnP || m_timestepP || m_rowP || m_fileOutP)) {
@@ -172,6 +178,7 @@ const Timestep* Args::getTimestepP() const      { return m_timestepP; }
 const FileOut* Args::getFileOutP() const        { return m_fileOutP; }
 const PrintData* Args::getPrintDataP() const    { return m_printDataP; }
 const FileData* Args::getFileDataP() const      { return m_fileDataP; }
+const Version* Args::getVersionP() const        { return m_versionP; }
 
 void Args::resolveRowVsTimestep() {
     bool rBgnDef, rEndDef, tBgnDef, tEndDef;
@@ -558,3 +565,15 @@ void FileData::process(const string& fileInName) {
 }
 const string& FileData::getFileDataName() const { return m_fileDataName; }
 const string& FileData::getDelimiter() const    { return m_delimiter; }
+
+//----------------------------------------------------------------------------//
+//***************************** CmdArgs::Version *****************************//
+//----------------------------------------------------------------------------//
+
+Version::Version() :
+  m_msg{m_program + ' ' + m_version + '\n'
+        + m_copyright + ' ' + m_author + " (" + m_email + ")\n\n"} {}
+
+const string& Version::getMsg() const { return m_msg; }
+
+//----------------------------------------------------------------------------//

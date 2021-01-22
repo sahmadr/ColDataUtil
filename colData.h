@@ -1,7 +1,7 @@
 /**
  * @file        colData.h
  *
- * @project     colDataUtil
+ * @project     ColDataUtil
  * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)

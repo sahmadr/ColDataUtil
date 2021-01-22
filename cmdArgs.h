@@ -1,7 +1,7 @@
 /**
  * @file        cmdArgs.h
  *
- * @project     colDataUtil
+ * @project     ColDataUtil
  * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
@@ -37,6 +37,7 @@ class CmdArgs::Args {
     FileOut*                m_fileOutP;     // file where to save calculations
     PrintData*              m_printDataP;   // print data to the screen
     FileData*               m_fileDataP;    // file data to a file
+    Version*                m_versionP;     // version information
 
     Args() = delete;
     Args(const Args&) = delete;
@@ -62,6 +63,7 @@ class CmdArgs::Args {
     const FileOut* getFileOutP() const;
     const PrintData* getPrintDataP() const;
     const FileData* getFileDataP() const;
+    const Version* getVersionP() const;
 
     void resolveRowVsTimestep();
 };
@@ -278,7 +280,27 @@ class CmdArgs::FileData {
 };
 
 //----------------------------------------------------------------------------//
-//**************************** CmdArgs::Timestep *****************************//
+//**************************** CmdArgs::Delimiter ****************************//
+//----------------------------------------------------------------------------//
+
+class CmdArgs::Version {
+  private:
+    const string
+        m_program     {"ColDataUtil"},
+        m_version     {"0.4"},
+        m_copyright   {"Copyright (C) 2020"},
+        m_author      {"Syed Ahmad Raza"},
+        m_email       {"git@ahmads.org"},
+        m_msg;
+
+    Version(const Version&) = delete;
+    Version& operator=(const Version&) = delete;
+
+  public:
+    explicit Version();
+    const string& getMsg() const;
+};
+
 //----------------------------------------------------------------------------//
 
 #endif

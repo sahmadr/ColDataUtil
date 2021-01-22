@@ -1,7 +1,7 @@
 /**
  * @file        output.cpp
  *
- * @project     colDataUtil
+ * @project     ColDataUtil
  * @version     0.4
  *
  * @author      Syed Ahmad Raza (git@ahmads.org)
@@ -19,6 +19,10 @@
  * Perform the output operations based on user input.
  */
 void Output::output(CmdArgs::Args* argsP) {
+    if (argsP->getVersionP()) {
+        cout << argsP->getVersionP()->getMsg();
+        return;
+    }
     printInputDataInfo(argsP->getFileInP()->getFileLocation(),
                        argsP->getColumnP()->getDataColTotal(),
                        argsP->getRowP()->getDataRowTotal(),
