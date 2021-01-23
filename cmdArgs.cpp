@@ -24,7 +24,7 @@ using namespace CmdArgs;
 Args::Args(int argc, char* argv[]) :
   m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
   m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr},
-  m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr},
+  m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr}, m_cycleP{nullptr},
   m_fileOutP{nullptr}, m_printDataP{nullptr}, m_fileDataP{nullptr},
   m_versionP{nullptr} {
     if (argc<=1) { throw logic_error(errorNoArguments); }
@@ -47,7 +47,7 @@ Args::Args(int argc, char* argv[]) :
                         }
                         else { throw invalid_argument(errorFileInNamedAlready);}
                         break;
-                    case Option::function:
+                    case Option::calculation:
                         if (!m_calcP) {
                             m_calcP = new Calc(s_c, m_argc, m_argv);
                         }
@@ -65,16 +65,31 @@ Args::Args(int argc, char* argv[]) :
                         if (!m_rowP) {
                             m_rowP = new Row(s_c, m_argc, m_argv);
                         }
-                        else if (std::get<1>(m_rowP->getRange()) == 0) {
+                        else if (!std::get<1>(m_rowP->getDefStatus())) {
                             m_rowP->setRowEnd(s_c, m_argc, m_argv);
                         }
                         else {
                             throw invalid_argument(errorRowsAlreadySpecified);
                         }
                         break;
+                    case Option::cycle:
+                        if (!m_cycleP) {
+                            m_cycleP = new Cycle(s_c, m_argc, m_argv);
+                        }
+                        else {
+                            m_cycleP->init(s_c, m_argc, m_argv);
+                        }
+                        break;
                     case Option::timestep:
                         if (!m_timestepP) {
                             m_timestepP = new Timestep(s_c, m_argc, m_argv);
+                        }
+                        else if (!std::get<1>(m_timestepP->getDefStatus())) {
+                            m_timestepP->setTimestepEnd(s_c, m_argc, m_argv);
+                        }
+                        else {
+                            throw invalid_argument(
+                                errorTimestepsAlreadySpecified);
                         }
                         break;
                     case Option::fileOut:
@@ -503,6 +518,37 @@ tuple<bool, bool> Timestep::getDefStatus() const {
     return {m_timestepBgnDefined, m_timestepEndDefined};
 }
 bool Timestep::isTimestepConsistent() const { return m_timestepConsistent; }
+
+//----------------------------------------------------------------------------//
+//****************************** CmdArgs::Cycle ******************************//
+//----------------------------------------------------------------------------//
+
+Cycle::Cycle(int c, int argC, const vector<string>& argV) {
+    init(c, argC, argV);
+}
+void Cycle::init(int c, int argC, const vector<string>& argV) {
+    while (c+1 < argC && argV[c+1][0] != '-') {
+        Args::setCount(++c);
+        // std::unordered_map<string, CycleId>::const_iterator
+        //     mapIt{mapStrToCycle.find(argV[c])};
+        // if (mapIt != mapStrToCycle.end()) {
+        //     if (std::find(m_calcIdSet.begin(), m_calcIdSet.end(),
+        //             mapIt->second) == m_calcIdSet.end()) {
+        //         m_calcIdSet.push_back(mapIt->second);
+        //     }
+        // }
+        // else { throw invalid_argument(errorCycleNameInvalid); }
+    }
+}
+void Cycle::process() {
+    // if (m_calcIdSet.empty()) {
+    //     m_calcIdSet.insert(m_calcIdSet.end(), {CycleId::findMin,
+    //         CycleId::findMax, CycleId::findAbsMin, CycleId::findAbsMax,
+    //         CycleId::findMean, CycleId::findQuadraticMean,
+    //         CycleId::findCubicMean});
+    // }
+}
+CycleInit Cycle::getCycleIdSet() const { return m_cycleInit; }
 
 //----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileOut *****************************//

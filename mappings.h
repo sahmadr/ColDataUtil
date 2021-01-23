@@ -20,10 +20,11 @@ using namespace CmdArgs;
 inline const unordered_map<string, Option> CmdArgs::mapStrToOption {
     // {"-s",              Option::fileIn},
     {"-i",              Option::fileIn},
-    {"-f",              Option::function},
+    {"-f",              Option::calculation},
     {"-c",              Option::column},
     {"-r",              Option::row},
     {"-t",              Option::timestep},
+    {"-a",              Option::calculation},
     // {"-d",              Option::fileOut},
     {"-o",              Option::fileOut},
     {"-h",              Option::help},
@@ -32,8 +33,8 @@ inline const unordered_map<string, Option> CmdArgs::mapStrToOption {
     {"--separator",     Option::delimiter},
     // {"--source",        Option::fileIn},
     {"--input",         Option::fileIn},
-    {"--fnc",           Option::function},
-    {"--function",      Option::function},
+    {"--calc",          Option::calculation},
+    {"--calculation",   Option::calculation},
     {"--col",           Option::column},
     {"--column",        Option::column},
     {"--columns",       Option::column},
@@ -50,7 +51,7 @@ inline const unordered_map<string, Option> CmdArgs::mapStrToOption {
     {"--version",       Option::version},
 };
 
-inline const std::unordered_map<string, CalcId> CmdArgs::mapStrToCalc {
+inline const unordered_map<string, CalcId> CmdArgs::mapStrToCalc {
     {"min",                 CalcId::findMin},
     {"minimum",             CalcId::findMin},
     {"max",                 CalcId::findMax},
@@ -88,19 +89,8 @@ template<typename T> inline const unordered_map<CmdArgs::CalcId, calcType>
     {CmdArgs::CalcId::findCubicMean,      CalcFnc::findCubicMean}
 };
 
-// template<typename T>
-// inline const std::unordered_map<calcType, string> CalcFnc::mapCalcToStr {
-//     {CalcFnc::findMin,           "minimum"},
-//     {CalcFnc::findMax,           "maximum"},
-//     {CalcFnc::findAbsMin,        "absolute minimum"},
-//     {CalcFnc::findAbsMax,        "absolute maximum"},
-//     {CalcFnc::findMean,          "mean"},
-//     {CalcFnc::findQuadraticMean, "quadratic mean (RMS)"},
-//     {CalcFnc::findCubicMean,     "cubic mean"}
-// };
-
 template<typename T>
-inline const std::unordered_map<calcType, string> CalcFnc::mapCalcToStr {
+inline const unordered_map<calcType, string> CalcFnc::mapCalcToStr {
     {CalcFnc::findMin,           "minimum"},
     {CalcFnc::findMax,           "maximum"},
     {CalcFnc::findAbsMin,        "absolute minimum"},
@@ -108,6 +98,13 @@ inline const std::unordered_map<calcType, string> CalcFnc::mapCalcToStr {
     {CalcFnc::findMean,          "mean"},
     {CalcFnc::findQuadraticMean, "quadratic mean (RMS)"},
     {CalcFnc::findCubicMean,     "cubic mean"}
+};
+
+inline const unordered_map<string, CycleInit> CmdArgs::mapStrToCycInit {
+    {"f",       CycleInit::first},
+    {"first",   CycleInit::first},
+    {"l",       CycleInit::last},
+    {"last",    CycleInit::last}
 };
 
 #endif

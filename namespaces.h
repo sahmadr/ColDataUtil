@@ -76,10 +76,11 @@ namespace ColData {
 //----------------------------------------------------------------------------//
 
 namespace CmdArgs {
-    enum class Option { delimiter, fileIn, function, column, row, timestep,
-        fileOut, printData, fileData, help, version };
+    enum class Option { delimiter, fileIn, calculation, column, row, timestep,
+        cycle, fileOut, printData, fileData, help, version };
     enum class CalcId { findMin, findMax, findAbsMin, findAbsMax, findMean,
         findQuadraticMean, findCubicMean };
+    enum class CycleInit { first, last };
     class Args;
     class Delimiter;
     class FileIn;
@@ -87,6 +88,7 @@ namespace CmdArgs {
     class Column;
     class Row;
     class Timestep;
+    class Cycle;
     class FileOut;
     class PrintData;
     class FileData;
@@ -94,6 +96,7 @@ namespace CmdArgs {
     class Version;
     extern const unordered_map<string, Option> mapStrToOption;
     extern const unordered_map<string, CalcId> mapStrToCalc;
+    extern const unordered_map<string, CycleInit> mapStrToCycInit;
 }
 
 //----------------------------------------------------------------------------//

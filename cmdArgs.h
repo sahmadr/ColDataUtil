@@ -34,6 +34,7 @@ class CmdArgs::Args {
     Column*                 m_columnP;      // columns to be processed
     Row*                    m_rowP;         // range of rows
     Timestep*               m_timestepP;    // range of timesteps
+    Cycle*                  m_cycleP;       // number of cycles
     FileOut*                m_fileOutP;     // file where to save calculations
     PrintData*              m_printDataP;   // print data to the screen
     FileData*               m_fileDataP;    // file data to a file
@@ -224,6 +225,29 @@ class CmdArgs::Timestep {
 };
 
 //----------------------------------------------------------------------------//
+//****************************** CmdArgs::Cycle ******************************//
+//----------------------------------------------------------------------------//
+
+class CmdArgs::Cycle {
+  private:
+    CycleInit m_cycleInit{CycleInit::last};
+    size_t  m_cycleTotal{0};
+
+    Cycle(const Cycle&) = delete;
+    Cycle& operator=(const Cycle&) = delete;
+
+  public:
+    explicit Cycle() = default;
+    explicit Cycle(int c, int argC, const vector<string>& argV);
+
+    void init(int c, int argC, const vector<string>& argV);
+
+    void process();
+
+    CycleInit getCycleIdSet() const;
+};
+
+//----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileOut *****************************//
 //----------------------------------------------------------------------------//
 
@@ -280,7 +304,7 @@ class CmdArgs::FileData {
 };
 
 //----------------------------------------------------------------------------//
-//**************************** CmdArgs::Delimiter ****************************//
+//***************************** CmdArgs::Version *****************************//
 //----------------------------------------------------------------------------//
 
 class CmdArgs::Version {

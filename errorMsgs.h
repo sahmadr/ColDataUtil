@@ -17,9 +17,9 @@
 
 inline const string
 
-errorNoArguments{"colDataUtil requires arguments. At "
-    "least the location of the input file to be processed must be provided. "
-    "Please consult the documentation for additional information."},
+errorNoArguments{"colDataUtil requires arguments. At least the location of the "
+    "input file to be processed must be provided. Please consult the "
+    "documentation for additional information."},
 errorInvalidOption{"An invalid option has been specified. Please consult the "
     "documentation."},
 errorInvalidValue{"An invalid value has been specified, which is not preceded "
@@ -30,7 +30,7 @@ errorFileInMissing{"The location of the input file to be processed must be "
     "provided. Please consult the documentation for additional information."},
 errorDlmSpecifiedAlready{"Multiple delimiters cannot be specified."},
 errorFileInNamedAlready{"Multiple input file names cannot be specified."},
-errorCalcNameInvalid{"An invalid function name has been specified. Please "
+errorCalcNameInvalid{"An invalid calculation name has been specified. Please "
     "consult the documentation."},
 errorColIsInt{"An integer column has been specified. Calculations cannot be "
     "performed on an integer column."},
@@ -67,6 +67,8 @@ errorTimeStepTooSmall{"Invalid timestep specified. The specified timestep is "
     "less than the smallest found in the input file."},
 errorTimeStepTooLarge{"Invalid timestep specified. The specified timestep is "
     "larger than the largest found in the input file."},
+errorTimestepsAlreadySpecified{"Please specify only two values for the "
+    "timestep option."},
 errorInputFile{"Input file could not be opened."},
 errorOutputFile{"Output file could not be opened."},
 
