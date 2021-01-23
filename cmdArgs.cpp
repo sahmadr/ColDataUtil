@@ -23,6 +23,7 @@ using namespace CmdArgs;
 
 Args::Args(int argc, char* argv[]) :
   m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
+  m_timestepDataIVP{nullptr}, m_doubleVSetP{},
   m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr},
   m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr}, m_cycleP{nullptr},
   m_fileOutP{nullptr}, m_printDataP{nullptr}, m_fileDataP{nullptr},
@@ -150,19 +151,17 @@ void Args::process() {
     if (!m_timestepP) { m_timestepP = new Timestep(); }
 
     // Load file and save the returned parameters ----------------------------//
-    int dataColTotal;
-    size_t dataRowTotal;
-    Delimitation dataDlmType;
-    tuple<bool, size_t, size_t> dataTimestepRange;
-
-    tie(dataDlmType, dataColTotal, dataRowTotal, dataTimestepRange)
-        = ColData::loadData(m_fileInP->getFileLocation(),
-                            m_delimiterP->getDelimiter());
-
-    m_fileInP->importDataDlmType(dataDlmType);
-    m_columnP->importDataColTotal(dataColTotal);
-    m_rowP->importDataRowTotal(dataRowTotal);
-    m_timestepP->importDataTimestepRange(dataTimestepRange);
+    tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>, IntV*,
+            vector<DoubleV*>&> loadedFileData {
+        ColData::loadData(m_fileInP->getFileLocation(),
+        m_delimiterP->getDelimiter())
+    };
+    m_timestepDataIVP = std::get<4>(loadedFileData);
+    m_doubleVSetP = std::get<5>(loadedFileData);
+    m_fileInP->importDataDlmType(std::get<0>(loadedFileData));
+    m_columnP->importDataColTotal(std::get<1>(loadedFileData));
+    m_rowP->importDataRowTotal(std::get<2>(loadedFileData));
+    m_timestepP->importDataTimestepRange(std::get<3>(loadedFileData));
 
     // After loading file ----------------------------------------------------//
     // Mandatory argument members
@@ -194,44 +193,53 @@ const FileOut* Args::getFileOutP() const        { return m_fileOutP; }
 const PrintData* Args::getPrintDataP() const    { return m_printDataP; }
 const FileData* Args::getFileDataP() const      { return m_fileDataP; }
 const Version* Args::getVersionP() const        { return m_versionP; }
+const ColData::IntV* Args::getTimestepDataIVP() const {
+    return m_timestepDataIVP;
+}
+const vector<ColData::DoubleV*>& Args::getDoubleVSetP() const {
+    return m_doubleVSetP;
+}
 
 void Args::resolveRowVsTimestep() {
     bool rBgnDef, rEndDef, tBgnDef, tEndDef;
     tie(rBgnDef, rEndDef) = m_rowP->getDefStatus();
     tie(tBgnDef, tEndDef) = m_timestepP->getDefStatus();
+    // IntV* timestepIVP{IntV::getOneP(0)};
 
     if ((rBgnDef && tBgnDef) || (rEndDef && tEndDef)) {
         throw logic_error(errorRowTimestepConflict);
     }
 
     if (!rBgnDef && !tBgnDef) {
-        m_timestepP->setTimestepBgn(
-            std::get<1>(m_timestepP->getDataTimestepRange()));
+        m_timestepP->setTimestepBgnFromData();
     }
     else if (tBgnDef) {
         m_rowP->setRowBgn(
-            IntV::getOneP(0)->getRow(std::get<0>(m_timestepP->getRange())));
+            m_timestepDataIVP->getRow(m_timestepP->getTimestepBgn())
+        );
     }
     else {
         if (m_timestepP->isTimestepConsistent()) {
             m_timestepP->setTimestepBgn(
-                IntV::getOneP(0)->getData()[std::get<0>(m_rowP->getRange())]);
+                m_timestepDataIVP->getData()[m_rowP->getRowBgn()]
+            );
         }
     }
 
     if (!rEndDef && !tEndDef) {
-        m_rowP->setRowEnd(m_rowP->getDataRowTotal() - 1);
-        m_timestepP->setTimestepEnd(
-            std::get<2>(m_timestepP->getDataTimestepRange()));
+        m_rowP->setRowEndFromData();
+        m_timestepP->setTimestepEndFromData();
     }
     else if (tEndDef) {
         m_rowP->setRowEnd(
-            IntV::getOneP(0)->getRow(std::get<1>(m_timestepP->getRange())));
+            m_timestepDataIVP->getRow(m_timestepP->getTimestepEnd())
+        );
     }
     else {
         if (m_timestepP->isTimestepConsistent()) {
             m_timestepP->setTimestepEnd(
-                IntV::getOneP(0)->getData()[std::get<1>(m_rowP->getRange())]);
+                m_timestepDataIVP->getData()[m_rowP->getRowEnd()]
+            );
         }
     }
 }
@@ -407,8 +415,6 @@ void Row::setRowEnd(int c, int argC, const vector<string>& argV) {
         m_rowEndDefined = true;
     }
 }
-void Row::setRowBgn(size_t val) { m_rowBgn = val; }
-void Row::setRowEnd(size_t val) { m_rowEnd = val; }
 void Row::importDataRowTotal(size_t dataRowTotal) {
     m_dataRowTotal = dataRowTotal;
 }
@@ -427,8 +433,13 @@ void Row::process() {
         throw invalid_argument(errorRowRangeInvalid);
     }
 }
+void Row::setRowBgn(size_t val) { m_rowBgn = val; }
+void Row::setRowEnd(size_t val) { m_rowEnd = val; }
+void Row::setRowEndFromData() { m_rowEnd = m_dataRowTotal - 1; }
 size_t Row::getDataRowTotal() const { return m_dataRowTotal; }
 tuple<size_t, size_t> Row::getRange() const { return {m_rowBgn, m_rowEnd}; }
+size_t Row::getRowBgn() const { return m_rowBgn; }
+size_t Row::getRowEnd() const { return m_rowEnd; }
 tuple<bool, bool> Row::getDefStatus() const {
     return {m_rowBgnDefined, m_rowEndDefined};
 }
@@ -468,6 +479,12 @@ void Timestep::setTimestepEnd(int c, int argC, const vector<string>& argV) {
 }
 void Timestep::setTimestepBgn(size_t val) { m_timestepBgn = val; }
 void Timestep::setTimestepEnd(size_t val) { m_timestepEnd = val; }
+void Timestep::setTimestepBgnFromData() {
+    m_timestepBgn = std::get<1>(m_dataTimestepRange);
+}
+void Timestep::setTimestepEndFromData() {
+    m_timestepEnd = std::get<2>(m_dataTimestepRange);
+}
 void Timestep::importDataTimestepRange(
         tuple<bool, size_t, size_t> dataTimestepRange) {
     m_dataTimestepRange = dataTimestepRange;
@@ -482,9 +499,6 @@ void Timestep::process() {
                 throw invalid_argument(errorTimeStepTooLarge);
             }
         }
-        // else {
-        //     m_timestepBgn = std::get<1>(m_dataTimestepRange);
-        // }
         if (m_timestepEndDefined) {
             if (m_timestepEnd <= std::get<1>(m_dataTimestepRange)) {
                 throw invalid_argument(errorTimeStepTooSmall);
@@ -493,9 +507,6 @@ void Timestep::process() {
                 throw invalid_argument(errorTimeStepTooLarge);
             }
         }
-        // else {
-        //     m_timestepEnd = std::get<2>(m_dataTimestepRange);
-        // }
         if (m_timestepBgnDefined && m_timestepEndDefined
             && m_timestepBgn >= m_timestepEnd) {
             throw invalid_argument(errorTimestepRangeInvalid);
@@ -514,6 +525,8 @@ tuple<bool, size_t, size_t> Timestep::getDataTimestepRange() const {
 tuple<size_t, size_t> Timestep::getRange() const {
     return {m_timestepBgn, m_timestepEnd};
 }
+size_t Timestep::getTimestepBgn() const { return m_timestepBgn; }
+size_t Timestep::getTimestepEnd() const { return m_timestepEnd; }
 tuple<bool, bool> Timestep::getDefStatus() const {
     return {m_timestepBgnDefined, m_timestepEndDefined};
 }

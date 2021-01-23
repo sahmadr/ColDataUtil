@@ -24,21 +24,23 @@
 
 class CmdArgs::Args {
   private:
-    inline static int       s_c{0};         // current count of processed args.
-    const int               m_argc;         // total number of arguments
-    const vector<string>    m_argv;         // complete set of arguments
-    const string            m_programName;  // program name
-    Delimiter*              m_delimiterP;   // delimiter
-    FileIn*                 m_fileInP;      // file with data to be processed
-    Calc*                   m_calcP;        // value functions to be calculated
-    Column*                 m_columnP;      // columns to be processed
-    Row*                    m_rowP;         // range of rows
-    Timestep*               m_timestepP;    // range of timesteps
-    Cycle*                  m_cycleP;       // number of cycles
-    FileOut*                m_fileOutP;     // file where to save calculations
-    PrintData*              m_printDataP;   // print data to the screen
-    FileData*               m_fileDataP;    // file data to a file
-    Version*                m_versionP;     // version information
+    inline static int        s_c{0};         // current count of processed args.
+    const int                m_argc;         // total number of arguments
+    const vector<string>     m_argv;         // complete set of arguments
+    const string             m_programName;  // program name
+    ColData::IntV*           m_timestepDataIVP;// timestep column data
+    vector<ColData::DoubleV*>m_doubleVSetP;  // double column data set
+    Delimiter*               m_delimiterP;   // delimiter
+    FileIn*                  m_fileInP;      // file with data to be processed
+    Calc*                    m_calcP;        // value functions to be calculated
+    Column*                  m_columnP;      // columns to be processed
+    Row*                     m_rowP;         // range of rows
+    Timestep*                m_timestepP;    // range of timesteps
+    Cycle*                   m_cycleP;       // number of cycles
+    FileOut*                 m_fileOutP;     // file where to save calculations
+    PrintData*               m_printDataP;   // print data to the screen
+    FileData*                m_fileDataP;    // file data to a file
+    Version*                 m_versionP;     // version information
 
     Args() = delete;
     Args(const Args&) = delete;
@@ -67,6 +69,9 @@ class CmdArgs::Args {
     const Version* getVersionP() const;
 
     void resolveRowVsTimestep();
+
+    const ColData::IntV* getTimestepDataIVP() const;
+    const vector<ColData::DoubleV*>& getDoubleVSetP() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -180,14 +185,16 @@ class CmdArgs::Row {
     explicit Row(int c, int argC, const vector<string>& argV);
     void setRowEnd(int c, int argC, const vector<string>& argV);
 
-    void setRowBgn(size_t val);
-    void setRowEnd(size_t val);
     void importDataRowTotal(size_t dataRowTotal);
-
     void process();
 
+    void setRowBgn(size_t val);
+    void setRowEnd(size_t val);
+    void setRowEndFromData();
     size_t getDataRowTotal() const;
     tuple<size_t, size_t> getRange() const;
+    size_t getRowBgn() const;
+    size_t getRowEnd() const;
     tuple<bool, bool> getDefStatus() const;
 };
 
@@ -212,14 +219,17 @@ class CmdArgs::Timestep {
     explicit Timestep(int c, int argC, const vector<string>& argV);
     void setTimestepEnd(int c, int argC, const vector<string>& argV);
 
-    void setTimestepBgn(size_t val);
-    void setTimestepEnd(size_t val);
     void importDataTimestepRange(tuple<bool, size_t, size_t> dataTimestepRange);
-
     void process();
 
+    void setTimestepBgn(size_t val);
+    void setTimestepEnd(size_t val);
+    void setTimestepBgnFromData();
+    void setTimestepEndFromData();
     tuple<bool, size_t, size_t> getDataTimestepRange() const;
     tuple<size_t, size_t> getRange() const;
+    size_t getTimestepBgn() const;
+    size_t getTimestepEnd() const;
     tuple<bool, bool> getDefStatus() const;
     bool isTimestepConsistent() const;
 };

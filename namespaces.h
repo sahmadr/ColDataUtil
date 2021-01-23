@@ -49,8 +49,8 @@ namespace ColData {
     // inline constexpr int delimiterLenLimit = 3;
     class DoubleV;
     class IntV;
-    tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>> loadData(
-        const string& fileName, const string& dlm);
+    const tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>, IntV*,
+        vector<DoubleV*>&> loadData(const string& fileName, const string& dlm);
     bool isNumberLine(stringV lineStr, string dlm);
     tuple<streampos, streampos> findLinePositions(ifstream& iFile,
         const string& dlm);

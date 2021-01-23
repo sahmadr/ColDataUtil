@@ -18,20 +18,17 @@
 inline const string
 
 errorNoArguments{"colDataUtil requires arguments. At least the location of the "
-    "input file to be processed must be provided. Please consult the "
-    "documentation for additional information."},
-errorInvalidOption{"An invalid option has been specified. Please consult the "
-    "documentation."},
+    "input file to be processed must be provided."},
+errorInvalidOption{"An invalid option has been specified."},
 errorInvalidValue{"An invalid value has been specified, which is not preceded "
-    "by a proper option. Please consult the documentation."},
+    "by a proper option."},
 errorFileInNameMissing{"File input option has been used but the file name has "
     "not been specified."},
 errorFileInMissing{"The location of the input file to be processed must be "
-    "provided. Please consult the documentation for additional information."},
+    "provided."},
 errorDlmSpecifiedAlready{"Multiple delimiters cannot be specified."},
 errorFileInNamedAlready{"Multiple input file names cannot be specified."},
-errorCalcNameInvalid{"An invalid calculation name has been specified. Please "
-    "consult the documentation."},
+errorCalcNameInvalid{"An invalid calculation name has been specified."},
 errorColIsInt{"An integer column has been specified. Calculations cannot be "
     "performed on an integer column."},
 errorColNamesInvalid{"None of the specified columns match the columns in the "
@@ -72,8 +69,9 @@ errorTimestepsAlreadySpecified{"Please specify only two values for the "
 errorInputFile{"Input file could not be opened."},
 errorOutputFile{"Output file could not be opened."},
 
-generalErrorMessage{"\nPlease contact the developer if further assistance is "
-    "required. Thank you."}
+generalErrorMessage{"\nPlease use the option -h or --help for additional "
+    "information, or consult the documentation. Please contact the developer if "
+    "further assistance is required. Thank you."}
 ;
 
 #endif

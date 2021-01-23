@@ -154,8 +154,9 @@ double DoubleV::getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const {
  * Load file and call all the relevant functions to process it and return all
  * the required variables to CmdArgs::FileIn::process().
  */
-tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>> ColData::loadData(
-        const string& fileName, const string& dlm) {
+const tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>, IntV*,
+        vector<DoubleV*>&> ColData::loadData(
+            const string& fileName, const string& dlm) {
     // Open file -------------------------------------------------------------//
     ifstream iFile{fileName};
     if (!iFile) { throw runtime_error(errorInputFile); }
@@ -194,11 +195,14 @@ tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>> ColData::loadData(
     iFile.close();
 
     tuple<bool, size_t, size_t> dataTimestepRange{0, 0, 0};
+    IntV* timestepDataIVP{nullptr};
     if (!IntV::getSetP().empty()) {
-        dataTimestepRange = IntV::getOneP(0)->getTimestepColRange();
+        timestepDataIVP = IntV::getOneP(0);
+        dataTimestepRange = timestepDataIVP->getTimestepColRange();
     }
 
-    return {dataDlmType, dataColTotal, dataRowTotal, dataTimestepRange};
+    return {dataDlmType, dataColTotal, dataRowTotal, dataTimestepRange,
+            timestepDataIVP, DoubleV::getSetP()};
 }
 
 /*
