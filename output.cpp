@@ -27,7 +27,8 @@ void Output::output(CmdArgs::Args* argsP) {
                        argsP->getColumnP()->getDataColTotal(),
                        argsP->getRowP()->getDataRowTotal(),
                        argsP->getFileInP()->getDataDlmType(),
-                       argsP->getTimestepP()->getDataTimestepRange());
+                       argsP->getTimestepP()->getDataTimestepIVP(),
+                       argsP->getColumnP()->getDataDoubleVSetP());
 
     if (argsP->getCalcP()) {
         if (!argsP->getFileOutP()) {
@@ -52,12 +53,16 @@ void Output::output(CmdArgs::Args* argsP) {
     }
     if (argsP->getPrintDataP()) {
         dataPrinter(argsP->getPrintDataP()->getDelimiter(),
-                    argsP->getRowP()->getDataRowTotal());
+                    argsP->getRowP()->getDataRowTotal(),
+                    argsP->getTimestepP()->getDataTimestepIVP(),
+                    argsP->getColumnP()->getDataDoubleVSetP());
     }
     if (argsP->getFileDataP()) {
         dataFiler(argsP->getFileDataP()->getFileDataName(),
                   argsP->getFileDataP()->getDelimiter(),
-                  argsP->getRowP()->getDataRowTotal());
+                  argsP->getRowP()->getDataRowTotal(),
+                  argsP->getTimestepP()->getDataTimestepIVP(),
+                  argsP->getColumnP()->getDataDoubleVSetP());
         cout<< "\nThe output has been written to \""
             << argsP->getFileDataP()->getFileDataName() << "\"" << endl;
     }
@@ -71,8 +76,8 @@ void Output::output(CmdArgs::Args* argsP) {
  */
 void Output::printInputDataInfo(const string& fileInName,
         const int dataColTotal, const size_t dataRowTotal,
-        const Delimitation dataDlmType,
-        const tuple<bool, size_t, size_t> dataTimestepRange) {
+        const Delimitation dataDlmType, const ColData::IntV* dataTimestepIVP,
+        const vector<ColData::DoubleV*> dataDoubleVSetP) {
     cout<< left << '\n' << string(55, '=') << "\n "
         << "Input file: " << fileInName << '\n' << string(55, '=') << "\n\n"
         << setw(20) << " Total columns:" << dataColTotal << '\n'
@@ -82,20 +87,20 @@ void Output::printInputDataInfo(const string& fileInName,
             ((dataDlmType == Delimitation::spacedAndDelimited) ?
                 "whitespace and delimiter" : "whitespace")) << '\n' << endl;
 
-    if (std::get<0>(dataTimestepRange)) {
+    if (dataTimestepIVP && std::get<0>(dataTimestepIVP->getTimestepRange())) {
         cout<< " Timestep column:\n" << string(30, '-') << '\n'
-            << setw(3) << right << IntV::getOneP(0)->getColNo() << ". "
-            << left << IntV::getOneP(0)->getColName() << '\n'
+            << setw(3) << right << dataTimestepIVP->getColNo() << ". "
+            << left << dataTimestepIVP->getColName() << '\n'
             << "\n Available timestep range is from "
-            << std::get<1>(dataTimestepRange) << " to "
-            << std::get<2>(dataTimestepRange) << ".\n\n";
+            << std::get<1>(dataTimestepIVP->getTimestepRange()) << " to "
+            << std::get<2>(dataTimestepIVP->getTimestepRange()) << ".\n\n";
     }
     else {
         cout<< " No consistent timestep column was found.\n\n";
     }
     cout<< " Data columns:\n"
         << string(30, '-') << "\n";
-    for (DoubleV* dVP : DoubleV::getSetP()) {
+    for (DoubleV* dVP : dataDoubleVSetP) {
         cout<< setw(3) << right << dVP->getColNo() << ". "
             << left << dVP->getColName() << '\n';
     }
@@ -205,23 +210,22 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
 /*
  * Print the data of all the vector columns; first integers and then doubles.
  */
-void Output::dataPrinter(const string& dlm, const size_t dataRowTotal) {
-    vector<IntV*>    iVSetP{IntV::getSetP()};
-    vector<DoubleV*> dVSetP{DoubleV::getSetP()};
-
+void Output::dataPrinter(const string& dlm, const size_t dataRowTotal,
+        const ColData::IntV* dataTimestepIVP,
+        const vector<ColData::DoubleV*> dataDoubleVSetP) {
     cout.setf(ios_base::scientific);
     cout.precision(numeric_limits<double>::max_digits10);
 
     // Print the header line
     cout << '\n';
-    for (IntV* iVP : iVSetP)    { cout << iVP->getColName() << dlm;}
-    for (DoubleV* dVP : dVSetP) { cout << dVP->getColName() << dlm;}
+    cout << dataTimestepIVP->getColName() << dlm;
+    for (DoubleV* dVP : dataDoubleVSetP) { cout << dVP->getColName() << dlm;}
     cout << "\n\n";
 
     // Print the data
     for (size_t row=0; row<dataRowTotal; ++row) {
-        for (IntV* iVP : iVSetP)    { cout << iVP->getData()[row] << dlm;}
-        for (DoubleV* dVP : dVSetP) { cout << dVP->getData()[row] << dlm;}
+        cout << dataTimestepIVP->getData()[row] << dlm;
+        for (DoubleV* dVP : dataDoubleVSetP) { cout << dVP->getData()[row] << dlm;}
         cout << '\n';
     }
     cout << flush;
@@ -231,25 +235,21 @@ void Output::dataPrinter(const string& dlm, const size_t dataRowTotal) {
  * File the data of all the vector columns; first integers and then doubles.
  */
 void Output::dataFiler(const string& fileName, const string& dlm,
-        const size_t dataRowTotal) {
+        const size_t dataRowTotal, const ColData::IntV* dataTimestepIVP,
+        const vector<ColData::DoubleV*> dataDoubleVSetP) {
     ofstream fOut{fileName};
     fOut.setf(ios_base::scientific);
     fOut.precision(numeric_limits<double>::max_digits10);
 
-    vector<IntV*>    iVSetP{IntV::getSetP()};
-    vector<DoubleV*> dVSetP{DoubleV::getSetP()};
-
     // File the header line
-    for (IntV* iVP : iVSetP)    { fOut << iVP->getColName() << dlm; }
-    for (DoubleV* dVP : dVSetP) { fOut << dVP->getColName() << dlm; }
+    fOut << dataTimestepIVP->getColName() << dlm;
+    for (DoubleV* dVP : dataDoubleVSetP) { fOut << dVP->getColName() << dlm; }
     fOut << '\n';
 
     // File the data
     for (size_t row=0; row<dataRowTotal; ++row) {
-        for (IntV* iVP : iVSetP) {
-            fOut << iVP->getData()[row] << dlm;
-        }
-        for (DoubleV* dVP : dVSetP) {
+        fOut << dataTimestepIVP->getData()[row] << dlm;
+        for (DoubleV* dVP : dataDoubleVSetP) {
             fOut << dVP->getData()[row] << dlm;
         }
         fOut << '\n';

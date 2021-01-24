@@ -40,7 +40,7 @@ const string& IntV::getColName() const  { return m_colName; }
 int IntV::getCol(int colNo) const       { return colNo = m_colNo; }
 string& IntV::getCol(string& colName) const { return colName = m_colName; }
 const vector<int>& IntV::getData() const{ return m_data; }
-tuple<bool, size_t, size_t> IntV::getTimestepColRange() const {
+tuple<bool, size_t, size_t> IntV::getTimestepRange() const {
     // bool represents timestep column consistency (true for consistent)
     // first size_t is beginning timestep and last one is final timestep
     if (m_data[0] < 0) {
@@ -154,9 +154,8 @@ double DoubleV::getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const {
  * Load file and call all the relevant functions to process it and return all
  * the required variables to CmdArgs::FileIn::process().
  */
-const tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>, IntV*,
-        vector<DoubleV*>&> ColData::loadData(
-            const string& fileName, const string& dlm) {
+const tuple<Delimitation, int, size_t, IntV*, vector<DoubleV*>&>
+        ColData::loadData(const string& fileName, const string& dlm) {
     // Open file -------------------------------------------------------------//
     ifstream iFile{fileName};
     if (!iFile) { throw runtime_error(errorInputFile); }
@@ -194,15 +193,13 @@ const tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>, IntV*,
     cout << '\r' << string(38, ' ') << "\n" << flush;
     iFile.close();
 
-    tuple<bool, size_t, size_t> dataTimestepRange{0, 0, 0};
-    IntV* timestepDataIVP{nullptr};
+    IntV* dataTimestepIVP{nullptr};
     if (!IntV::getSetP().empty()) {
-        timestepDataIVP = IntV::getOneP(0);
-        dataTimestepRange = timestepDataIVP->getTimestepColRange();
+        dataTimestepIVP = IntV::getOneP(0);
     }
 
-    return {dataDlmType, dataColTotal, dataRowTotal, dataTimestepRange,
-            timestepDataIVP, DoubleV::getSetP()};
+    return {dataDlmType, dataColTotal, dataRowTotal, dataTimestepIVP,
+            DoubleV::getSetP()};
 }
 
 /*

@@ -23,7 +23,6 @@ using namespace CmdArgs;
 
 Args::Args(int argc, char* argv[]) :
   m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
-  m_timestepDataIVP{nullptr}, m_doubleVSetP{},
   m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr},
   m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr}, m_cycleP{nullptr},
   m_fileOutP{nullptr}, m_printDataP{nullptr}, m_fileDataP{nullptr},
@@ -151,25 +150,23 @@ void Args::process() {
     if (!m_timestepP) { m_timestepP = new Timestep(); }
 
     // Load file and save the returned parameters ----------------------------//
-    tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>, IntV*,
-            vector<DoubleV*>&> loadedFileData {
+    tuple<Delimitation, int, size_t, IntV*, vector<DoubleV*>&> loadedFileData {
         ColData::loadData(m_fileInP->getFileLocation(),
         m_delimiterP->getDelimiter())
     };
-    m_timestepDataIVP = std::get<4>(loadedFileData);
-    m_doubleVSetP = std::get<5>(loadedFileData);
     m_fileInP->importDataDlmType(std::get<0>(loadedFileData));
     m_columnP->importDataColTotal(std::get<1>(loadedFileData));
+    m_columnP->importDataDouble(std::get<4>(loadedFileData));
     m_rowP->importDataRowTotal(std::get<2>(loadedFileData));
-    m_timestepP->importDataTimestepRange(std::get<3>(loadedFileData));
+    m_timestepP->importDataTimestep(std::get<3>(loadedFileData));
 
     // After loading file ----------------------------------------------------//
     // Mandatory argument members
-    if (m_calcP) { m_calcP->process(); }
-    m_columnP->process();
     m_rowP->process();
     m_timestepP->process();
     resolveRowVsTimestep();
+    if (m_calcP) { m_calcP->process(); }
+    m_columnP->process(m_timestepP->getDataTimestepIVP());
 
     // Optional argument members
     if (m_fileOutP) { m_fileOutP->process(m_fileInP->getFileLocation()); }
@@ -193,18 +190,11 @@ const FileOut* Args::getFileOutP() const        { return m_fileOutP; }
 const PrintData* Args::getPrintDataP() const    { return m_printDataP; }
 const FileData* Args::getFileDataP() const      { return m_fileDataP; }
 const Version* Args::getVersionP() const        { return m_versionP; }
-const ColData::IntV* Args::getTimestepDataIVP() const {
-    return m_timestepDataIVP;
-}
-const vector<ColData::DoubleV*>& Args::getDoubleVSetP() const {
-    return m_doubleVSetP;
-}
 
 void Args::resolveRowVsTimestep() {
     bool rBgnDef, rEndDef, tBgnDef, tEndDef;
     tie(rBgnDef, rEndDef) = m_rowP->getDefStatus();
     tie(tBgnDef, tEndDef) = m_timestepP->getDefStatus();
-    // IntV* timestepIVP{IntV::getOneP(0)};
 
     if ((rBgnDef && tBgnDef) || (rEndDef && tEndDef)) {
         throw logic_error(errorRowTimestepConflict);
@@ -215,13 +205,15 @@ void Args::resolveRowVsTimestep() {
     }
     else if (tBgnDef) {
         m_rowP->setRowBgn(
-            m_timestepDataIVP->getRow(m_timestepP->getTimestepBgn())
+            m_timestepP->getDataTimestepIVP()->getRow(
+                m_timestepP->getTimestepBgn())
         );
     }
     else {
         if (m_timestepP->isTimestepConsistent()) {
             m_timestepP->setTimestepBgn(
-                m_timestepDataIVP->getData()[m_rowP->getRowBgn()]
+                m_timestepP->getDataTimestepIVP()->getData()[
+                    m_rowP->getRowBgn()]
             );
         }
     }
@@ -232,13 +224,15 @@ void Args::resolveRowVsTimestep() {
     }
     else if (tEndDef) {
         m_rowP->setRowEnd(
-            m_timestepDataIVP->getRow(m_timestepP->getTimestepEnd())
+            m_timestepP->getDataTimestepIVP()->getRow(
+                m_timestepP->getTimestepEnd())
         );
     }
     else {
         if (m_timestepP->isTimestepConsistent()) {
             m_timestepP->setTimestepEnd(
-                m_timestepDataIVP->getData()[m_rowP->getRowEnd()]
+                m_timestepP->getDataTimestepIVP()->getData()[
+                    m_rowP->getRowEnd()]
             );
         }
     }
@@ -329,29 +323,33 @@ void Column::init(int c, int argC, const vector<string>& argV) {
 void Column::importDataColTotal(int dataColTotal) {
     m_dataColTotal = dataColTotal;
 }
-void Column::process() {
+void Column::importDataDouble(
+            const vector<ColData::DoubleV*>& dataDoubleVSetP) {
+    m_dataDoubleVSetP = dataDoubleVSetP;
+}
+void Column::process(const ColData::IntV* dataTimestepIVP) {
     // If no number or name is entered after option flag, select all columns
     if (m_intInputColSet.empty() && m_strInputColSet.empty()) {
-        for (ColData::DoubleV* dVP : ColData::DoubleV::getSetP()) {
+        for (ColData::DoubleV* dVP : m_dataDoubleVSetP) {
             m_dataDoubleColSet.push_back(dVP->getColNo());
         }
     }
     else {
-        // Check that it is NOT an integer column
-        for (ColData::IntV* iVP : ColData::IntV::getSetP()) {
+        // Check that it is NOT the timestep column
+        if (dataTimestepIVP != nullptr) {
             bool colExists{0};
             for (int intInput : m_intInputColSet) {
-                colExists = (intInput == iVP->getColNo());
+                colExists = (intInput == dataTimestepIVP->getColNo());
             }
             if (!colExists) {
                 for (string& strInput : m_strInputColSet) {
-                    colExists = (strInput == iVP->getColName());
+                    colExists = (strInput == dataTimestepIVP->getColName());
                 }
             }
-            if (colExists) { throw invalid_argument(errorColIsInt); }
+            if (colExists) { throw invalid_argument(errorColIsTimeStep); }
         }
         // Match the input to the respective column in the given file
-        for (ColData::DoubleV* dVP : ColData::DoubleV::getSetP()) {
+        for (ColData::DoubleV* dVP : m_dataDoubleVSetP) {
             bool colExists{0};
             for (int intInput : m_intInputColSet) {
                 colExists = intInput == dVP->getColNo();
@@ -381,7 +379,9 @@ int Column::getDataColTotal() const {
 const vector<int>& Column::getDataDoubleColSet() const {
     return m_dataDoubleColSet;
 }
-
+const vector<ColData::DoubleV*>& Column::getDataDoubleVSetP() const {
+    return m_dataDoubleVSetP;
+}
 //----------------------------------------------------------------------------//
 //******************************* CmdArgs::Row *******************************//
 //----------------------------------------------------------------------------//
@@ -485,9 +485,11 @@ void Timestep::setTimestepBgnFromData() {
 void Timestep::setTimestepEndFromData() {
     m_timestepEnd = std::get<2>(m_dataTimestepRange);
 }
-void Timestep::importDataTimestepRange(
-        tuple<bool, size_t, size_t> dataTimestepRange) {
-    m_dataTimestepRange = dataTimestepRange;
+void Timestep::importDataTimestep(const ColData::IntV* dataTimestepIVP) {
+    if (dataTimestepIVP) {
+        m_dataTimestepIVP = dataTimestepIVP;
+        m_dataTimestepRange = dataTimestepIVP->getTimestepRange();
+    }
 }
 void Timestep::process() {
     if (std::get<0>(m_dataTimestepRange)) {// is input timestep range consistent
@@ -518,6 +520,9 @@ void Timestep::process() {
             throw logic_error(errorDataTimestepInconsistent);
         }
     }
+}
+const ColData::IntV* Timestep::getDataTimestepIVP() const {
+    return m_dataTimestepIVP;
 }
 tuple<bool, size_t, size_t> Timestep::getDataTimestepRange() const {
     return m_dataTimestepRange;

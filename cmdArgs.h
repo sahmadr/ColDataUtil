@@ -28,8 +28,6 @@ class CmdArgs::Args {
     const int                m_argc;         // total number of arguments
     const vector<string>     m_argv;         // complete set of arguments
     const string             m_programName;  // program name
-    ColData::IntV*           m_timestepDataIVP;// timestep column data
-    vector<ColData::DoubleV*>m_doubleVSetP;  // double column data set
     Delimiter*               m_delimiterP;   // delimiter
     FileIn*                  m_fileInP;      // file with data to be processed
     Calc*                    m_calcP;        // value functions to be calculated
@@ -69,9 +67,6 @@ class CmdArgs::Args {
     const Version* getVersionP() const;
 
     void resolveRowVsTimestep();
-
-    const ColData::IntV* getTimestepDataIVP() const;
-    const vector<ColData::DoubleV*>& getDoubleVSetP() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -142,10 +137,11 @@ class CmdArgs::Calc {
 
 class CmdArgs::Column {
   private:
-    vector<int>     m_intInputColSet{};
-    vector<string>  m_strInputColSet{};
-    int             m_dataColTotal{0};
-    vector<int>     m_dataDoubleColSet{};
+    vector<int>                   m_intInputColSet{};
+    vector<string>                m_strInputColSet{};
+    int                           m_dataColTotal{0};
+    vector<int>                   m_dataDoubleColSet{};
+    vector<ColData::DoubleV*>     m_dataDoubleVSetP;
 
     Column(const Column&) = delete;
     Column& operator=(const Column&) = delete;
@@ -156,13 +152,15 @@ class CmdArgs::Column {
 
     void init(int c, int argC, const vector<string>& argV);
     void importDataColTotal(int dataColTotal);
+    void importDataDouble(const vector<ColData::DoubleV*>& dataDoubleVSetP);
 
-    void process();
+    void process(const ColData::IntV* dataTimestepIVP);
 
     const vector<int>& getIntInputColSet() const;
     const vector<string>& getStrInputColSet() const;
     int getDataColTotal() const;
     const vector<int>& getDataDoubleColSet() const;
+    const vector<ColData::DoubleV*>& getDataDoubleVSetP() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -204,11 +202,12 @@ class CmdArgs::Row {
 
 class CmdArgs::Timestep {
   private:
-    bool    m_timestepBgnDefined{false};
-    bool    m_timestepEndDefined{false};
-    size_t  m_timestepBgn{0};
-    size_t  m_timestepEnd{0};
-    bool    m_timestepConsistent{false};
+    bool                        m_timestepBgnDefined{false};
+    bool                        m_timestepEndDefined{false};
+    size_t                      m_timestepBgn{0};
+    size_t                      m_timestepEnd{0};
+    bool                        m_timestepConsistent{false};
+    const ColData::IntV*        m_dataTimestepIVP{nullptr};
     tuple<bool, size_t, size_t> m_dataTimestepRange{0,0,0};
 
     Timestep(const Timestep&) = delete;
@@ -219,13 +218,14 @@ class CmdArgs::Timestep {
     explicit Timestep(int c, int argC, const vector<string>& argV);
     void setTimestepEnd(int c, int argC, const vector<string>& argV);
 
-    void importDataTimestepRange(tuple<bool, size_t, size_t> dataTimestepRange);
+    void importDataTimestep(const ColData::IntV* dataTimestepIVP);
     void process();
 
     void setTimestepBgn(size_t val);
     void setTimestepEnd(size_t val);
     void setTimestepBgnFromData();
     void setTimestepEndFromData();
+    const ColData::IntV* getDataTimestepIVP() const;
     tuple<bool, size_t, size_t> getDataTimestepRange() const;
     tuple<size_t, size_t> getRange() const;
     size_t getTimestepBgn() const;

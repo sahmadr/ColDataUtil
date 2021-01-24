@@ -48,7 +48,7 @@ class ColData::IntV {
     int getCol(int colNo) const;
     string& getCol(string& colName) const;
     const vector<int>& getData() const;
-    tuple<bool, size_t, size_t> getTimestepColRange() const;
+    tuple<bool, size_t, size_t> getTimestepRange() const;
     size_t getRow(int timestepVal) const;
 
     static int getTotal();

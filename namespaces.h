@@ -49,8 +49,8 @@ namespace ColData {
     // inline constexpr int delimiterLenLimit = 3;
     class DoubleV;
     class IntV;
-    const tuple<Delimitation, int, size_t, tuple<bool, size_t, size_t>, IntV*,
-        vector<DoubleV*>&> loadData(const string& fileName, const string& dlm);
+    const tuple<Delimitation, int, size_t, IntV*, vector<DoubleV*>&> loadData(
+        const string& fileName, const string& dlm);
     bool isNumberLine(stringV lineStr, string dlm);
     tuple<streampos, streampos> findLinePositions(ifstream& iFile,
         const string& dlm);
@@ -129,7 +129,8 @@ namespace Output {
     void output(CmdArgs::Args* argsP);
     void printInputDataInfo(const string& fileInName, const int dataColTotal,
         const size_t dataRowTotal, const Delimitation dataDlmType,
-        const tuple<bool, size_t, size_t> dataTimestepRange);
+        const ColData::IntV* dataTimestepIVP,
+        const vector<ColData::DoubleV*> dataDoubleVSetP);
     void printer(
         const tuple<size_t, size_t> rowRange,
         const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
@@ -140,9 +141,12 @@ namespace Output {
         const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet);
-    void dataPrinter(const string& dlm, const size_t dataRowTotal);
+    void dataPrinter(const string& dlm, const size_t dataRowTotal,
+        const ColData::IntV* dataTimestepIVP,
+        const vector<ColData::DoubleV*> dataDoubleVSetP);
     void dataFiler(const string& fileName, const string& dlm,
-        const size_t dataRowTotal);
+        const size_t dataRowTotal, const ColData::IntV* dataTimestepIVP,
+        const vector<ColData::DoubleV*> dataDoubleVSetP);
     template<typename T> const unordered_map<CmdArgs::CalcId, calcType>
         mapCalcIdToCalc;
 }

@@ -29,8 +29,8 @@ errorFileInMissing{"The location of the input file to be processed must be "
 errorDlmSpecifiedAlready{"Multiple delimiters cannot be specified."},
 errorFileInNamedAlready{"Multiple input file names cannot be specified."},
 errorCalcNameInvalid{"An invalid calculation name has been specified."},
-errorColIsInt{"An integer column has been specified. Calculations cannot be "
-    "performed on an integer column."},
+errorColIsTimeStep{"The timestep column has been specified. Calculations "
+    "cannot be performed on the timestep column."},
 errorColNamesInvalid{"None of the specified columns match the columns in the "
     "input file."},
 errorFileOutNameMissing{"File output option has been used but the file name "
