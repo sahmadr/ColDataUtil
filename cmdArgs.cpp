@@ -65,7 +65,7 @@ Args::Args(int argc, char* argv[]) :
                         if (!m_rowP) {
                             m_rowP = new Row(s_c, m_argc, m_argv);
                         }
-                        else if (!std::get<1>(m_rowP->getDefStatus())) {
+                        else if (!get<1>(m_rowP->getDefStatus())) {
                             m_rowP->setRowEnd(s_c, m_argc, m_argv);
                         }
                         else {
@@ -84,7 +84,7 @@ Args::Args(int argc, char* argv[]) :
                         if (!m_timestepP) {
                             m_timestepP = new Timestep(s_c, m_argc, m_argv);
                         }
-                        else if (!std::get<1>(m_timestepP->getDefStatus())) {
+                        else if (!get<1>(m_timestepP->getDefStatus())) {
                             m_timestepP->setTimestepEnd(s_c, m_argc, m_argv);
                         }
                         else {
@@ -145,7 +145,9 @@ void Args::process() {
         m_calcP = new Calc();
     }
     if (!m_columnP) { m_columnP = new Column(); }
-    // if (m_rowP && m_timestepP) { throw logic_error(errorRowTimestepConflict); }
+    if (m_cycleP && (m_rowP || m_timestepP)) {
+        throw logic_error(errorCycleRowTimestepConflict);
+    }
     if (!m_rowP) { m_rowP = new Row(); }
     if (!m_timestepP) { m_timestepP = new Timestep(); }
 
@@ -154,17 +156,74 @@ void Args::process() {
         ColData::loadData(m_fileInP->getFileLocation(),
         m_delimiterP->getDelimiter())
     };
-    m_fileInP->importDataDlmType(std::get<0>(loadedFileData));
-    m_columnP->importDataColTotal(std::get<1>(loadedFileData));
-    m_columnP->importDataDouble(std::get<4>(loadedFileData));
-    m_rowP->importDataRowTotal(std::get<2>(loadedFileData));
-    m_timestepP->importDataTimestep(std::get<3>(loadedFileData));
+    m_fileInP->importDataDlmType(get<0>(loadedFileData));
+    m_columnP->importDataColTotal(get<1>(loadedFileData));
+    m_columnP->importDataDouble(get<4>(loadedFileData));
+    m_rowP->importDataRowTotal(get<2>(loadedFileData));
+    m_timestepP->importDataTimestep(get<3>(loadedFileData));
 
     // After loading file ----------------------------------------------------//
     // Mandatory argument members
-    m_rowP->process();
-    m_timestepP->process();
+    if (m_cycleP) {
+        m_cycleP->process(m_columnP->getDataDoubleVSetP());
+        m_rowP->process(
+            get<0>(m_cycleP->getRowDefStatus()),
+            get<1>(m_cycleP->getRowDefStatus()),
+            get<0>(m_cycleP->getRowDefRange()),
+            get<1>(m_cycleP->getRowDefRange()),
+            m_cycleP->getInitType()
+        );
+        m_timestepP->process(
+            get<0>(m_cycleP->getTimestepDefStatus()),
+            get<1>(m_cycleP->getTimestepDefStatus()),
+            get<0>(m_cycleP->getTimestepDefRange()),
+            get<1>(m_cycleP->getTimestepDefRange()),
+            m_cycleP->getInitType()
+        );
+    }
+    else {
+        m_rowP->process();
+        m_timestepP->process();
+    }
     resolveRowVsTimestep();
+    if (m_cycleP) {
+        DoubleV* cycleColDVP{DoubleV::getOnePFromCol(m_cycleP->getColNo())};
+        int cycles{0};
+        double rowInitial{0}, rowFinal{0};
+
+        if (m_cycleP->getInitType() == CmdArgs::CycleInit::full) {
+            tie(cycles, rowInitial, rowFinal) =
+                cycleColDVP->findCycles(m_rowP->getRowBgn(),
+                    m_rowP->getRowEnd(), m_cycleP->getCenter());
+            m_cycleP->setCycleCount(cycles);
+        }
+        else if (m_cycleP->getInitType() == CmdArgs::CycleInit::first) {
+            tie(cycles, rowInitial, rowFinal) =
+                cycleColDVP->findCyclesFirst(m_rowP->getRowBgn(),
+                    m_rowP->getRowEnd(), m_cycleP->getCenter(),
+                    m_cycleP->getCount());
+            if (cycles != m_cycleP->getCycleCount()) {
+                m_cycleP->setCycleCount(cycles);
+            }
+        }
+        else if (m_cycleP->getInitType() == CmdArgs::CycleInit::last) {
+            tie(cycles, rowInitial, rowFinal) =
+                cycleColDVP->findCyclesLast(m_rowP->getRowBgn(),
+                    m_rowP->getRowEnd(), m_cycleP->getCenter(),
+                    m_cycleP->getCount());
+            if (cycles != m_cycleP->getCycleCount()) {
+                m_cycleP->setCycleCount(cycles);
+            }
+        }
+
+        // Update cycles, rows and timesteps
+        m_rowP->setRowBgn(rowInitial);
+        m_rowP->setRowEnd(rowFinal);
+        if (m_timestepP->isTimestepConsistent()) {
+            m_timestepP->setTimestepBgnFromRow(rowInitial);
+            m_timestepP->setTimestepEndFromRow(rowFinal);
+        }
+    }
     if (m_calcP) { m_calcP->process(); }
     m_columnP->process(m_timestepP->getDataTimestepIVP());
 
@@ -186,6 +245,7 @@ const Calc* Args::getCalcP() const              { return m_calcP; }
 const Column* Args::getColumnP() const          { return m_columnP; }
 const Row* Args::getRowP() const                { return m_rowP; }
 const Timestep* Args::getTimestepP() const      { return m_timestepP; }
+const Cycle* Args::getCycleP() const            { return m_cycleP; }
 const FileOut* Args::getFileOutP() const        { return m_fileOutP; }
 const PrintData* Args::getPrintDataP() const    { return m_printDataP; }
 const FileData* Args::getFileDataP() const      { return m_fileDataP; }
@@ -199,7 +259,6 @@ void Args::resolveRowVsTimestep() {
     if ((rBgnDef && tBgnDef) || (rEndDef && tEndDef)) {
         throw logic_error(errorRowTimestepConflict);
     }
-
     if (!rBgnDef && !tBgnDef) {
         m_timestepP->setTimestepBgnFromData();
     }
@@ -211,13 +270,9 @@ void Args::resolveRowVsTimestep() {
     }
     else {
         if (m_timestepP->isTimestepConsistent()) {
-            m_timestepP->setTimestepBgn(
-                m_timestepP->getDataTimestepIVP()->getData()[
-                    m_rowP->getRowBgn()]
-            );
+            m_timestepP->setTimestepBgnFromRow(m_rowP->getRowBgn());
         }
     }
-
     if (!rEndDef && !tEndDef) {
         m_rowP->setRowEndFromData();
         m_timestepP->setTimestepEndFromData();
@@ -230,11 +285,14 @@ void Args::resolveRowVsTimestep() {
     }
     else {
         if (m_timestepP->isTimestepConsistent()) {
-            m_timestepP->setTimestepEnd(
-                m_timestepP->getDataTimestepIVP()->getData()[
-                    m_rowP->getRowEnd()]
-            );
+            m_timestepP->setTimestepEndFromRow(m_rowP->getRowEnd());
         }
+    }
+    if (m_rowP->getRowBgn() > m_rowP->getRowEnd()) {
+        throw invalid_argument(errorRowRangeInvalid);
+    }
+    if (m_timestepP->getTimestepBgn() > m_timestepP->getTimestepEnd()) {
+            throw invalid_argument(errorTimestepRangeInvalid);
     }
 }
 
@@ -278,8 +336,9 @@ Calc::Calc(int c, int argC, const vector<string>& argV) {
 void Calc::init(int c, int argC, const vector<string>& argV) {
     while (c+1 < argC && argV[c+1][0] != '-') {
         Args::setCount(++c);
-        std::unordered_map<string, CalcId>::const_iterator
-            mapIt{mapStrToCalc.find(argV[c])};
+        unordered_map<string, CalcId>::const_iterator mapIt{
+            mapStrToCalc.find(argV[c])
+        };
         if (mapIt != mapStrToCalc.end()) {
             if (std::find(m_calcIdSet.begin(), m_calcIdSet.end(),
                     mapIt->second) == m_calcIdSet.end()) {
@@ -291,10 +350,15 @@ void Calc::init(int c, int argC, const vector<string>& argV) {
 }
 void Calc::process() {
     if (m_calcIdSet.empty()) {
-        m_calcIdSet.insert(m_calcIdSet.end(), {CalcId::findMin,
-            CalcId::findMax, CalcId::findAbsMin, CalcId::findAbsMax,
-            CalcId::findMean, CalcId::findQuadraticMean,
-            CalcId::findCubicMean});
+        m_calcIdSet.insert(m_calcIdSet.end(), {
+            // CalcId::findMin,
+            // CalcId::findMax,
+            // CalcId::findAbsMin,
+            // CalcId::findAbsMax,
+            CalcId::findMean,
+            // CalcId::findQuadraticMean,
+            // CalcId::findCubicMean,
+        });
     }
 }
 const vector<CalcId>& Calc::getCalcIdSet() const {
@@ -418,7 +482,31 @@ void Row::setRowEnd(int c, int argC, const vector<string>& argV) {
 void Row::importDataRowTotal(size_t dataRowTotal) {
     m_dataRowTotal = dataRowTotal;
 }
+void Row::process(bool rowDefined1, bool rowDefined2, size_t row1, size_t row2,
+        CycleInit cycleInitStatus){
+    if (rowDefined1 && rowDefined2) {
+        m_rowBgn = row1;
+        m_rowEnd = row2;
+        m_rowBgnDefined = m_rowEndDefined = true;
+    }
+    else if (rowDefined1 && !rowDefined2
+            && cycleInitStatus != CycleInit::last) {
+        m_rowBgn = row1;
+        m_rowBgnDefined = true;
+    }
+    else if (rowDefined1 && !rowDefined2
+            && cycleInitStatus == CycleInit::last) {
+        m_rowEnd = row1;
+        m_rowEndDefined = true;
+    }
+    Row::process();
+}
 void Row::process() {
+    if (m_rowBgnDefined && m_rowEndDefined && m_rowBgn > m_rowEnd) {
+        size_t temp = m_rowBgn;
+        m_rowBgn = m_rowEnd;
+        m_rowEnd = temp;
+    }
     if (m_rowBgnDefined) {
         if (m_rowBgn >= (m_dataRowTotal - 1)) {
             throw invalid_argument(errorRowRangeInvalid);
@@ -428,9 +516,6 @@ void Row::process() {
         if (m_rowEnd > (m_dataRowTotal - 1)) {
             throw invalid_argument(errorRowRangeInvalid);
         }
-    }
-    if (m_rowBgnDefined && m_rowEndDefined && m_rowBgn >= m_rowEnd) {
-        throw invalid_argument(errorRowRangeInvalid);
     }
 }
 void Row::setRowBgn(size_t val) { m_rowBgn = val; }
@@ -480,10 +565,16 @@ void Timestep::setTimestepEnd(int c, int argC, const vector<string>& argV) {
 void Timestep::setTimestepBgn(size_t val) { m_timestepBgn = val; }
 void Timestep::setTimestepEnd(size_t val) { m_timestepEnd = val; }
 void Timestep::setTimestepBgnFromData() {
-    m_timestepBgn = std::get<1>(m_dataTimestepRange);
+    m_timestepBgn = get<1>(m_dataTimestepRange);
 }
 void Timestep::setTimestepEndFromData() {
-    m_timestepEnd = std::get<2>(m_dataTimestepRange);
+    m_timestepEnd = get<2>(m_dataTimestepRange);
+}
+void Timestep::setTimestepBgnFromRow(size_t val) {
+    m_timestepBgn = m_dataTimestepIVP->getData()[val];
+}
+void Timestep::setTimestepEndFromRow(size_t val) {
+    m_timestepEnd = m_dataTimestepIVP->getData()[val];
 }
 void Timestep::importDataTimestep(const ColData::IntV* dataTimestepIVP) {
     if (dataTimestepIVP) {
@@ -491,27 +582,48 @@ void Timestep::importDataTimestep(const ColData::IntV* dataTimestepIVP) {
         m_dataTimestepRange = dataTimestepIVP->getTimestepRange();
     }
 }
+void Timestep::process(bool timestepDefined1, bool timestepDefined2,
+        size_t timestep1, size_t timestep2, CycleInit cycleInitStatus) {
+    if (timestepDefined1 && timestepDefined2) {
+        m_timestepBgn = timestep1;
+        m_timestepEnd = timestep2;
+        m_timestepBgnDefined = m_timestepEndDefined = true;
+    }
+    else if (timestepDefined1 && !timestepDefined2
+            && cycleInitStatus != CycleInit::last) {
+        m_timestepBgn = timestep1;
+        m_timestepBgnDefined = true;
+    }
+    else if (timestepDefined1 && !timestepDefined2
+            && cycleInitStatus == CycleInit::last) {
+        m_timestepEnd = timestep1;
+        m_timestepEndDefined = true;
+    }
+    Timestep::process();
+}
 void Timestep::process() {
-    if (std::get<0>(m_dataTimestepRange)) {// is input timestep range consistent
+    if (get<0>(m_dataTimestepRange)) {// is input timestep range consistent
+        if (m_timestepBgnDefined && m_timestepEndDefined
+                && m_timestepBgn > m_timestepEnd) {
+            size_t temp = m_timestepBgn;
+            m_timestepBgn = m_timestepEnd;
+            m_timestepEnd = temp;
+        }
         if (m_timestepBgnDefined) {
-            if (m_timestepBgn < std::get<1>(m_dataTimestepRange)) {
+            if (m_timestepBgn < get<1>(m_dataTimestepRange)) {
                 throw invalid_argument(errorTimeStepTooSmall);
             }
-            if (m_timestepBgn >= std::get<2>(m_dataTimestepRange)) {
+            if (m_timestepBgn >= get<2>(m_dataTimestepRange)) {
                 throw invalid_argument(errorTimeStepTooLarge);
             }
         }
         if (m_timestepEndDefined) {
-            if (m_timestepEnd <= std::get<1>(m_dataTimestepRange)) {
+            if (m_timestepEnd <= get<1>(m_dataTimestepRange)) {
                 throw invalid_argument(errorTimeStepTooSmall);
             }
-            if (m_timestepEnd > std::get<2>(m_dataTimestepRange)) {
+            if (m_timestepEnd > get<2>(m_dataTimestepRange)) {
                 throw invalid_argument(errorTimeStepTooLarge);
             }
-        }
-        if (m_timestepBgnDefined && m_timestepEndDefined
-            && m_timestepBgn >= m_timestepEnd) {
-            throw invalid_argument(errorTimestepRangeInvalid);
         }
         m_timestepConsistent = true;
     }
@@ -545,28 +657,185 @@ Cycle::Cycle(int c, int argC, const vector<string>& argV) {
     init(c, argC, argV);
 }
 void Cycle::init(int c, int argC, const vector<string>& argV) {
-    while (c+1 < argC && argV[c+1][0] != '-') {
+    while (c+1 < argC && argV[c+1][0] != '-' && m_cycleArgV.size() < 5) {
         Args::setCount(++c);
-        // std::unordered_map<string, CycleId>::const_iterator
-        //     mapIt{mapStrToCycle.find(argV[c])};
-        // if (mapIt != mapStrToCycle.end()) {
-        //     if (std::find(m_calcIdSet.begin(), m_calcIdSet.end(),
-        //             mapIt->second) == m_calcIdSet.end()) {
-        //         m_calcIdSet.push_back(mapIt->second);
-        //     }
-        // }
-        // else { throw invalid_argument(errorCycleNameInvalid); }
+        ++m_cycleArgC;
+        m_cycleArgV.push_back(argV[c]);
     }
 }
-void Cycle::process() {
-    // if (m_calcIdSet.empty()) {
-    //     m_calcIdSet.insert(m_calcIdSet.end(), {CycleId::findMin,
-    //         CycleId::findMax, CycleId::findAbsMin, CycleId::findAbsMax,
-    //         CycleId::findMean, CycleId::findQuadraticMean,
-    //         CycleId::findCubicMean});
+void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP) {
+    for (string cycleArg : m_cycleArgV) {
+        if (all_of(cycleArg.begin(), cycleArg.end(), isdigit)) {
+            if (m_cycleCount<0) {
+                m_cycleCount = stoi(cycleArg);
+                if (m_cycleCount < 0) {
+                    throw invalid_argument(errorCycleInvalid);
+                }
+            }
+            else {
+                throw invalid_argument(errorCycleAlreadySpecified);
+            }
+        }
+        else {
+            size_t pos;
+            unordered_map<string, CycleInit>::const_iterator mapIt{
+                mapStrToCycleInit.find(cycleArg)
+            };
+            if (m_cycleInit == CycleInit::empty
+                    && mapIt != mapStrToCycleInit.end()) {
+                m_cycleInit = mapIt->second;
+            }
+            else if (m_cycleCenter == 0.0
+                    && ((pos=cycleArg.find("m=")) != string::npos)) {
+                cycleArg.erase(0, pos+2);
+                string numStr{"0123456789Ee-+."};
+                if (all_of(cycleArg.begin(), cycleArg.end(), [&](char c) {
+                        return (numStr.find(c) != string::npos); })) {
+                    m_cycleCenter = stod(cycleArg);
+                }
+                else {
+                    throw invalid_argument{errorCycleCenterInvalid};
+                }
+            }
+            else if (!get<0>(m_cycleRowDefined)
+                     && ((pos=cycleArg.find("r=")) != string::npos)) {
+                cycleArg.erase(0, pos+2);
+                if (stoi(cycleArg) < 0){
+                    throw invalid_argument(errorRowRangeInvalid);
+                }
+                get<0>(m_cycleRow) = stoi(cycleArg);
+                get<0>(m_cycleRowDefined) = true;
+            }
+            else if (!get<1>(m_cycleRowDefined)
+                     && ((pos=cycleArg.find("r=")) != string::npos)) {
+                cycleArg.erase(0, pos+2);
+                if (stoi(cycleArg) <= 0){
+                    throw invalid_argument(errorRowRangeInvalid);
+                }
+                get<1>(m_cycleRow) = stoi(cycleArg);
+                get<1>(m_cycleRowDefined) = true;
+            }
+            else if (!get<0>(m_cycleTimestepDefined)
+                     && ((pos=cycleArg.find("t=")) != string::npos)) {
+                cycleArg.erase(0, pos+2);
+                if (stoi(cycleArg) < 0) {
+                    throw invalid_argument(errorTimestepRangeInvalid);
+                }
+                get<0>(m_cycleTimestep) = stoi(cycleArg);
+                get<0>(m_cycleTimestepDefined) = true;
+            }
+            else if (!get<1>(m_cycleTimestepDefined)
+                     && ((pos=cycleArg.find("t=")) != string::npos)) {
+                cycleArg.erase(0, pos+2);
+                if (stoi(cycleArg) <= 0) {
+                    throw invalid_argument(errorTimestepRangeInvalid);
+                }
+                get<1>(m_cycleTimestep) = stoi(cycleArg);
+                get<1>(m_cycleTimestepDefined) = true;
+            }
+            else if (m_cycleColNo<0) {
+                if ((pos=cycleArg.find("c=")) != string::npos) {
+                    cycleArg.erase(0, pos+2);
+                    bool colExists{false};
+                    if (all_of(cycleArg.begin(), cycleArg.end(), isdigit)) {
+                        m_cycleColNo = stoi(cycleArg);
+                        for (ColData::DoubleV* dVP : dataDoubleVSetP) {
+                            if (m_cycleColNo == dVP->getColNo()) {
+                                colExists = true;
+                                break;
+                            }
+                        }
+                    }
+                    else {
+                        for (ColData::DoubleV* dVP : dataDoubleVSetP) {
+                            if (cycleArg == dVP->getColName()) {
+                                m_cycleColNo = dVP->getColNo();
+                                colExists = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!colExists) {
+                        throw invalid_argument(errorColNoAbsent);
+                    }
+                }
+                else {
+                    for (ColData::DoubleV* dVP : dataDoubleVSetP) {
+                        if (cycleArg == dVP->getColName()) {
+                            m_cycleColNo = dVP->getColNo();
+                            break;
+                        }
+                    }
+                    if (m_cycleColNo<0) {
+                        throw invalid_argument(errorCycleColNameInvalid);
+                    }
+                }
+            }
+            else {
+                throw invalid_argument(errorCycleArgumentInvalid);
+            }
+        }
+    }
+
+    // Error checking
+    if (m_cycleColNo<0) {
+        throw logic_error(errorCycleColNameMissing);
+    }
+    // if (m_cycleCount<0 &&
+    //         !get<1>(m_cycleRowDefined) && !get<1>(m_cycleTimestepDefined)) {
+    //     throw logic_error(errorCycleTooFewArguments);
     // }
+    if (m_cycleCount>0 &&
+            (get<1>(m_cycleRowDefined) || get<1>(m_cycleTimestepDefined))) {
+        throw logic_error(errorCycleTooManyArguments);
+    }
+    if (get<0>(m_cycleRowDefined) && get<0>(m_cycleTimestepDefined)) {
+        throw logic_error(errorCycleWithRowTimestepConflict);
+    }
+    if (m_cycleCount<0
+            && (m_cycleInit == CycleInit::first
+                || m_cycleInit == CycleInit::last)) {
+        throw logic_error(errorCycleMissing);
+    }
+    // Automatic assignment of variables
+    if (m_cycleCount<0 && m_cycleInit == CycleInit::empty) {
+        m_cycleInit = CycleInit::full;
+    }
+    if (m_cycleCount>0 && m_cycleInit == CycleInit::empty) {
+        m_cycleInit = CycleInit::last;
+    }
+
+    cout<< "\n Cycle arguments:\n"
+        << (m_cycleInit==CycleInit::empty ? " CycleInit::empty" :
+            (m_cycleInit==CycleInit::first ? " CycleInit::first" :
+             (m_cycleInit==CycleInit::last ? " CycleInit::last" :
+              " CycleInit::full")))
+        << "\n CycleCount     = " << m_cycleCount
+        << "\n CycleColNo     = " << m_cycleColNo
+        << "\n CycleMean      = " << m_cycleCenter
+        << "\n CycleRow1      = " << get<0>(m_cycleRow)
+        << "\n CycleRow2      = " << get<1>(m_cycleRow)
+        << "\n CycleTimestep1 = " << get<0>(m_cycleTimestep)
+        << "\n CycleTimestep2 = " << get<1>(m_cycleTimestep) << '\n';
 }
-CycleInit Cycle::getCycleIdSet() const { return m_cycleInit; }
+void Cycle::setCycleCount(int cycles)   { m_cycleCount = cycles; }
+int Cycle::getCycleCount() const        { return m_cycleCount; }
+CycleInit Cycle::getInitType() const    { return m_cycleInit; }
+int Cycle::getCount() const             { return m_cycleCount; }
+int Cycle::getColNo() const             { return m_cycleColNo; }
+double Cycle::getCenter() const         { return m_cycleCenter; }
+const tuple<size_t, size_t> Cycle::getRowDefRange() const {
+    return m_cycleRow;
+}
+const tuple<size_t, size_t> Cycle::getTimestepDefRange() const {
+    return m_cycleTimestep;
+}
+const tuple<bool, bool> Cycle::getRowDefStatus() const {
+    return m_cycleRowDefined;
+}
+const tuple<bool, bool> Cycle::getTimestepDefStatus() const {
+    return m_cycleTimestepDefined;
+}
 
 //----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileOut *****************************//

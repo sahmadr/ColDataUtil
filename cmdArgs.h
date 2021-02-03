@@ -61,12 +61,14 @@ class CmdArgs::Args {
     const Column* getColumnP() const;
     const Row* getRowP() const;
     const Timestep* getTimestepP() const;
+    const Cycle* getCycleP() const;
     const FileOut* getFileOutP() const;
     const PrintData* getPrintDataP() const;
     const FileData* getFileDataP() const;
     const Version* getVersionP() const;
 
     void resolveRowVsTimestep();
+    void resolveCycle();
 };
 
 //----------------------------------------------------------------------------//
@@ -184,6 +186,8 @@ class CmdArgs::Row {
     void setRowEnd(int c, int argC, const vector<string>& argV);
 
     void importDataRowTotal(size_t dataRowTotal);
+    void process(bool rowDefined1, bool rowDefined2,
+        size_t row1, size_t row2, CycleInit cycleInitStatus);
     void process();
 
     void setRowBgn(size_t val);
@@ -219,12 +223,17 @@ class CmdArgs::Timestep {
     void setTimestepEnd(int c, int argC, const vector<string>& argV);
 
     void importDataTimestep(const ColData::IntV* dataTimestepIVP);
+    void process(bool timestepDefined1, bool timestepDefined2,
+        size_t timestep1, size_t timestep2, CycleInit cycleInitStatus);
     void process();
 
     void setTimestepBgn(size_t val);
     void setTimestepEnd(size_t val);
     void setTimestepBgnFromData();
     void setTimestepEndFromData();
+    void setTimestepBgnFromRow(size_t val);
+    void setTimestepEndFromRow(size_t val);
+
     const ColData::IntV* getDataTimestepIVP() const;
     tuple<bool, size_t, size_t> getDataTimestepRange() const;
     tuple<size_t, size_t> getRange() const;
@@ -240,8 +249,16 @@ class CmdArgs::Timestep {
 
 class CmdArgs::Cycle {
   private:
-    CycleInit m_cycleInit{CycleInit::last};
-    size_t  m_cycleTotal{0};
+    size_t                  m_cycleArgC{0};
+    vector<string>          m_cycleArgV{};
+    CycleInit               m_cycleInit{CycleInit::empty};
+    int                     m_cycleCount{-1};
+    int                     m_cycleColNo{-1};
+    double                  m_cycleCenter{0.0};
+    tuple<bool, bool>       m_cycleRowDefined{false, false};
+    tuple<size_t, size_t>   m_cycleRow{0, 0};
+    tuple<bool, bool>       m_cycleTimestepDefined{false, false};
+    tuple<size_t, size_t>   m_cycleTimestep{0, 0};
 
     Cycle(const Cycle&) = delete;
     Cycle& operator=(const Cycle&) = delete;
@@ -252,9 +269,19 @@ class CmdArgs::Cycle {
 
     void init(int c, int argC, const vector<string>& argV);
 
-    void process();
+    void process(const vector<ColData::DoubleV*>& dataDoubleVSetP);
 
-    CycleInit getCycleIdSet() const;
+    void setCycleCount(int cycles);
+
+    int getCycleCount() const;
+    CycleInit getInitType() const;
+    int getCount() const;
+    int getColNo() const;
+    double getCenter() const;
+    const tuple<size_t, size_t> getRowDefRange() const;
+    const tuple<size_t, size_t> getTimestepDefRange() const;
+    const tuple<bool, bool> getRowDefStatus() const;
+    const tuple<bool, bool> getTimestepDefStatus() const;
 };
 
 //----------------------------------------------------------------------------//

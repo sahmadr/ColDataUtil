@@ -17,7 +17,6 @@
 #include "errorMsgs.h"
 
 using namespace ColData;
-using   std::istringstream, std::all_of, std::any_of, std::remove_if;
 
 //----------------------------------------------------------------------------//
 //*************************** ColData::IntV Class ****************************//
@@ -145,6 +144,148 @@ double DoubleV::getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const {
         sum += x*x*x;
     }
     return sum;
+}
+
+// Cycles --------------------------------------------------------------------//
+tuple<int, size_t, size_t> DoubleV::findCycles(const size_t rowBgn,
+        const size_t rowEnd, const double mean) const {
+    size_t r{rowBgn}, rowInitial{rowBgn}, rowFinal{rowEnd}, rowLast{rowEnd};
+    bool foundInitial{false};
+    int cycles{0}, crossings{0}, maxCrossings{2};
+
+    if (rowBgn>0)                    { --r; }
+    if (rowEnd == (m_data.size()-1)) { --rowLast; }
+
+    while (r<=rowLast) {
+        if (signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)) {
+            foundInitial = true;
+            if (std::abs(m_data[r] - mean) < std::abs(m_data[r+1] - mean)) {
+                rowInitial = r;
+                crossings = -1;
+                break;
+            }
+            else {
+                rowInitial = r+1;
+                break;
+            }
+        }
+        ++r;
+    }
+    if (!foundInitial) {
+        throw runtime_error(errorDataInvalid);
+    }
+
+    r = rowInitial;
+    while (r<=rowLast) {
+        if (signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)) {
+            ++crossings;
+            if (crossings == maxCrossings) {
+                ++cycles;
+                crossings = 0;
+                rowFinal =
+                    (std::abs(m_data[r] - mean)<std::abs(m_data[r+1] - mean)) ?
+                    r : (r+1);
+            }
+        }
+        ++r;
+    }
+    return {cycles, rowInitial, rowFinal};
+}
+tuple<int, size_t, size_t> DoubleV::findCyclesFirst(const size_t rowBgn,
+        const size_t rowEnd, const double mean, const int cycles) const {
+    size_t r{rowBgn}, rowInitial{rowBgn}, rowFinal{rowEnd}, rowLast{rowEnd};
+    bool foundInitial{false};
+    int cycleCount{0}, crossings{0}, maxCrossings{2};
+
+    if (rowBgn>0)                    { --r; }
+    if (rowEnd == (m_data.size()-1)) { --rowLast; }
+
+    while (r<=rowLast) {
+        if (signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)) {
+            foundInitial = true;
+            if (std::abs(m_data[r] - mean) < std::abs(m_data[r+1] - mean)) {
+                rowInitial = r;
+                crossings = -1;
+                break;
+            }
+            else {
+                rowInitial = r+1;
+                break;
+            }
+        }
+        ++r;
+    }
+    if (!foundInitial) {
+        throw runtime_error(errorDataInvalid);
+    }
+
+    r = rowInitial;
+    while (r<=rowLast && cycleCount<cycles) {
+        if (signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)) {
+            ++crossings;
+            if (crossings == maxCrossings) {
+                ++cycleCount;
+                crossings = 0;
+                rowFinal =
+                    (std::abs(m_data[r] - mean)<std::abs(m_data[r+1] - mean)) ?
+                    r : (r+1);
+            }
+        }
+        ++r;
+    }
+    if (cycleCount != cycles) {
+        throw invalid_argument(errorCycleNotAvailable);
+    }
+    return {cycleCount, rowInitial, rowFinal};
+}
+tuple<int, size_t, size_t> DoubleV::findCyclesLast(const size_t rowBgn,
+        const size_t rowEnd, const double mean, const int cycles) const {
+    size_t r{rowEnd}, rowFinal{rowEnd}, rowInitial{rowBgn}, rowFirst{rowBgn};
+    bool foundFinal{false};
+    int cycleCount{0}, crossings{0}, maxCrossings{2};
+
+    if (rowBgn == 0)                 { ++rowFirst; }
+    if (rowEnd != (m_data.size()-1)) { ++r; }
+    // if (rowBgn>0)                    { --r; }
+    // if (rowEnd == (m_data.size()-1)) { --rowLast; }
+
+    while (r>=rowFirst) {
+        if (signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean)) {
+            foundFinal = true;
+            if (std::abs(m_data[r] - mean) < std::abs(m_data[r-1] - mean)) {
+                rowFinal = r;
+                crossings = -1;
+                break;
+            }
+            else {
+                rowFinal = r-1;
+                break;
+            }
+        }
+        --r;
+    }
+    if (!foundFinal) {
+        throw runtime_error(errorDataInvalid);
+    }
+
+    r = rowFinal;
+    while (r>=rowFirst && cycleCount<cycles) {
+        if (signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean)) {
+            ++crossings;
+            if (crossings == maxCrossings) {
+                ++cycleCount;
+                crossings = 0;
+                rowInitial =
+                    (std::abs(m_data[r] - mean)<std::abs(m_data[r-1] - mean)) ?
+                    r : (r-1);
+            }
+        }
+        --r;
+    }
+    if (cycleCount != cycles) {
+        throw invalid_argument(errorCycleNotAvailable);
+    }
+    return {cycleCount, rowInitial, rowFinal};
 }
 
 //----------------------------------------------------------------------------//
@@ -505,3 +646,30 @@ size_t ColData::populateVectors(ifstream& iFile, const string& dlm,
     }
     return dataRowTotal;
 }
+
+/* First correctly working attempt with cycles starting anywhere!
+int DoubleV::getCycles(const size_t rowBgn, const size_t rowEnd,
+        const double mean) const {
+    int cycles{0};
+    int crossings{0};
+    bool initialSign{m_data[rowBgn]};
+    double initialVal{m_data[rowBgn]};
+    bool initialDir{(m_data[rowBgn+1] - m_data[rowBgn]) > 0};
+
+    for (size_t r=rowBgn; r<rowEnd; ++r) {
+        if (signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)) {
+            ++crossings;
+        }
+        if (crossings==2) {
+            if (initialDir == ((m_data[r+1] - m_data[r]) > 0)) {
+                if ((initialDir && (m_data[r+1] > initialVal))
+                        || (!initialDir && (m_data[r+1] < initialVal))) {
+                    ++cycles;
+                    crossings = 0;
+                }
+            }
+        }
+    }
+    return cycles;
+}
+ */

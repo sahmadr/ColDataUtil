@@ -29,9 +29,11 @@
 #include <cmath>
 
 using   std::string, std::vector, std::set, std::tuple, std::unordered_map,
-        std::numeric_limits, std::tie, std::ios_base, std::to_string,
+        std::numeric_limits, std::tie, std::get, std::ios_base, std::to_string,
         std::cout, std::endl, std::flush, std::setw, std::left, std::right,
-        std::stoi, std::stod,
+        std::istringstream, std::ostringstream,
+        std::stoi, std::stod, std::signbit,
+        std::all_of, std::any_of, std::remove_if,
         std::ifstream, std::ofstream, std::getline, std::streampos,
         std::invalid_argument, std::logic_error, std::runtime_error;
 
@@ -80,7 +82,7 @@ namespace CmdArgs {
         cycle, fileOut, printData, fileData, help, version };
     enum class CalcId { findMin, findMax, findAbsMin, findAbsMax, findMean,
         findQuadraticMean, findCubicMean };
-    enum class CycleInit { first, last };
+    enum class CycleInit { first, last, full, empty };
     class Args;
     class Delimiter;
     class FileIn;
@@ -96,7 +98,7 @@ namespace CmdArgs {
     class Version;
     extern const unordered_map<string, Option> mapStrToOption;
     extern const unordered_map<string, CalcId> mapStrToCalc;
-    extern const unordered_map<string, CycleInit> mapStrToCycInit;
+    extern const unordered_map<string, CycleInit> mapStrToCycleInit;
 }
 
 //----------------------------------------------------------------------------//
@@ -135,12 +137,14 @@ namespace Output {
         const tuple<size_t, size_t> rowRange,
         const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
         const vector<int>& doubleColSet,
-        const vector<CmdArgs::CalcId>& calcIdSet);
+        const vector<CmdArgs::CalcId>& calcIdSet,
+        const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP);
     void filer(const string& fileOutName, const string& fileInName,
         const tuple<size_t, size_t> rowRange,
         const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
         const vector<int>& doubleColSet,
-        const vector<CmdArgs::CalcId>& calcIdSet);
+        const vector<CmdArgs::CalcId>& calcIdSet,
+        const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP);
     void dataPrinter(const string& dlm, const size_t dataRowTotal,
         const ColData::IntV* dataTimestepIVP,
         const vector<ColData::DoubleV*> dataDoubleVSetP);

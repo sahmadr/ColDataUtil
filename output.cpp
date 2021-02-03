@@ -23,46 +23,59 @@ void Output::output(CmdArgs::Args* argsP) {
         cout << argsP->getVersionP()->getMsg();
         return;
     }
-    printInputDataInfo(argsP->getFileInP()->getFileLocation(),
-                       argsP->getColumnP()->getDataColTotal(),
-                       argsP->getRowP()->getDataRowTotal(),
-                       argsP->getFileInP()->getDataDlmType(),
-                       argsP->getTimestepP()->getDataTimestepIVP(),
-                       argsP->getColumnP()->getDataDoubleVSetP());
-
-    if (argsP->getCalcP()) {
+    printInputDataInfo(
+        argsP->getFileInP()->getFileLocation(),
+        argsP->getColumnP()->getDataColTotal(),
+        argsP->getRowP()->getDataRowTotal(),
+        argsP->getFileInP()->getDataDlmType(),
+        argsP->getTimestepP()->getDataTimestepIVP(),
+        argsP->getColumnP()->getDataDoubleVSetP()
+    );
+    if (argsP->getCycleP() || argsP->getCalcP()) {
         if (!argsP->getFileOutP()) {
-            printer(argsP->getRowP()->getRange(),
-                    argsP->getTimestepP()->isTimestepConsistent(),
-                    argsP->getTimestepP()->getRange(),
-                    argsP->getColumnP()->getDataDoubleColSet(),
-                    argsP->getCalcP()->getCalcIdSet());
+            printer(
+                argsP->getRowP()->getRange(),
+                argsP->getTimestepP()->isTimestepConsistent(),
+                argsP->getTimestepP()->getRange(),
+                argsP->getColumnP()->getDataDoubleColSet(),
+                argsP->getCalcP()->getCalcIdSet(),
+                argsP->getCycleP(),
+                argsP->getCalcP()
+            );
         }
         else {
             for (const string& fileOut : argsP->getFileOutP()->getFileLocSet()){
-                filer(fileOut, argsP->getFileInP()->getFileLocation(),
-                      argsP->getRowP()->getRange(),
-                      argsP->getTimestepP()->isTimestepConsistent(),
-                      argsP->getTimestepP()->getRange(),
-                      argsP->getColumnP()->getDataDoubleColSet(),
-                      argsP->getCalcP()->getCalcIdSet());
+                filer(
+                    fileOut, argsP->getFileInP()->getFileLocation(),
+                    argsP->getRowP()->getRange(),
+                    argsP->getTimestepP()->isTimestepConsistent(),
+                    argsP->getTimestepP()->getRange(),
+                    argsP->getColumnP()->getDataDoubleColSet(),
+                    argsP->getCalcP()->getCalcIdSet(),
+                    argsP->getCycleP(),
+                    argsP->getCalcP()
+                );
                 cout<< "\nThe output has been written to \"" << fileOut << "\""
                     << endl;
             }
         }
     }
     if (argsP->getPrintDataP()) {
-        dataPrinter(argsP->getPrintDataP()->getDelimiter(),
-                    argsP->getRowP()->getDataRowTotal(),
-                    argsP->getTimestepP()->getDataTimestepIVP(),
-                    argsP->getColumnP()->getDataDoubleVSetP());
+        dataPrinter(
+            argsP->getPrintDataP()->getDelimiter(),
+            argsP->getRowP()->getDataRowTotal(),
+            argsP->getTimestepP()->getDataTimestepIVP(),
+            argsP->getColumnP()->getDataDoubleVSetP()
+        );
     }
     if (argsP->getFileDataP()) {
-        dataFiler(argsP->getFileDataP()->getFileDataName(),
-                  argsP->getFileDataP()->getDelimiter(),
-                  argsP->getRowP()->getDataRowTotal(),
-                  argsP->getTimestepP()->getDataTimestepIVP(),
-                  argsP->getColumnP()->getDataDoubleVSetP());
+        dataFiler(
+            argsP->getFileDataP()->getFileDataName(),
+            argsP->getFileDataP()->getDelimiter(),
+            argsP->getRowP()->getDataRowTotal(),
+            argsP->getTimestepP()->getDataTimestepIVP(),
+            argsP->getColumnP()->getDataDoubleVSetP()
+        );
         cout<< "\nThe output has been written to \""
             << argsP->getFileDataP()->getFileDataName() << "\"" << endl;
     }
@@ -87,13 +100,13 @@ void Output::printInputDataInfo(const string& fileInName,
             ((dataDlmType == Delimitation::spacedAndDelimited) ?
                 "whitespace and delimiter" : "whitespace")) << '\n' << endl;
 
-    if (dataTimestepIVP && std::get<0>(dataTimestepIVP->getTimestepRange())) {
+    if (dataTimestepIVP && get<0>(dataTimestepIVP->getTimestepRange())) {
         cout<< " Timestep column:\n" << string(30, '-') << '\n'
             << setw(3) << right << dataTimestepIVP->getColNo() << ". "
             << left << dataTimestepIVP->getColName() << '\n'
             << "\n Available timestep range is from "
-            << std::get<1>(dataTimestepIVP->getTimestepRange()) << " to "
-            << std::get<2>(dataTimestepIVP->getTimestepRange()) << ".\n\n";
+            << get<1>(dataTimestepIVP->getTimestepRange()) << " to "
+            << get<2>(dataTimestepIVP->getTimestepRange()) << ".\n\n";
     }
     else {
         cout<< " No consistent timestep column was found.\n\n";
@@ -116,40 +129,52 @@ void Output::printInputDataInfo(const string& fileInName,
  */
 void Output::printer(
         const tuple<size_t, size_t> rowRange,
-        const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
+        const bool timestepConsistent,
+        const tuple<size_t,size_t> timestepRange,
         const vector<int>& doubleColSet,
-        const vector<CmdArgs::CalcId>& calcIdSet) {
+        const vector<CmdArgs::CalcId>& calcIdSet,
+        const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP) {
     size_t rBgn, rEnd, tBgn, tEnd;
     tie(rBgn, rEnd) = rowRange;
     tie(tBgn, tEnd) = timestepRange;
 
-    // Set cout properties
-    cout.setf(ios_base::scientific);
-    cout.precision(numeric_limits<double>::max_digits10);
-
     // Print heading
-    cout<< " Calculation results for:\n"
-        << " Rows      => " << to_string(rBgn) << " to " << to_string(rEnd)
-        <<'\n';
+    cout<< " Calculation results\n";
     if (timestepConsistent) {
-        cout << " Timesteps => " << to_string(tBgn) << " to " << to_string(tEnd)
-        <<'\n';
+        cout<< "\n Timesteps         => "
+            << to_string(tBgn) << " to " << to_string(tEnd);
     }
-    cout<< string(55, '=') << '\n';
+    cout<< "\n Rows              => "
+        << to_string(rBgn) << " to " << to_string(rEnd);
+    if (cycleP) {
+        DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getColNo())};
 
-    // Print calculations
-    for (const int colNo : doubleColSet) {
+        cout<< "\n Column for cycles => "<< cycleColDVP->getColName()
+            << "\n Center for cycles => "  << cycleP->getCenter()
+            << "\n Number of cycles  => "  << cycleP->getCycleCount();
+    }
+    cout<< '\n' << string(55, '=') << '\n';
 
-        // Print subheading
-        cout<< "\n " << DoubleV::getOnePFromCol(colNo)->getColName() << '\n'
-            << string(55, '-') << '\n';
+    if (calcP) {
+        if (cycleP && cycleP->getCycleCount()==0) {
+            throw logic_error(errorCycleInvalidForCalc);
+        }
+        cout.setf(ios_base::scientific);
+        cout.precision(numeric_limits<double>::max_digits10);
 
-        // Print calculation results
-        for (const CmdArgs::CalcId id : calcIdSet) {
-            calcType calc{mapCalcIdToCalc<int>.at(id)};
-            cout<< ' ' << left << setw(22)
-                << CalcFnc::mapCalcToStr<int>.at(calc)
-                << " = " << calc(colNo, rBgn, rEnd) << '\n';
+        for (const int colNo : doubleColSet) {
+
+            // Print subheadings
+            cout<< "\n " << DoubleV::getOnePFromCol(colNo)->getColName() << '\n'
+                << string(55, '-') << '\n';
+
+            // Print calculation results
+            for (const CmdArgs::CalcId id : calcIdSet) {
+                calcType calc{mapCalcIdToCalc<int>.at(id)};
+                cout<< ' ' << left << setw(22)
+                    << CalcFnc::mapCalcToStr<int>.at(calc)
+                    << " = " << calc(colNo, rBgn, rEnd) << '\n';
+            }
         }
     }
     cout << endl;
@@ -161,9 +186,11 @@ void Output::printer(
  */
 void Output::filer(const string& fileOutName,  const string& fileInName,
         const tuple<size_t, size_t> rowRange,
-        const bool timestepConsistent, const tuple<size_t,size_t> timestepRange,
+        const bool timestepConsistent,
+        const tuple<size_t,size_t> timestepRange,
         const vector<int>& doubleColSet,
-        const vector<CmdArgs::CalcId>& calcIdSet) {
+        const vector<CmdArgs::CalcId>& calcIdSet,
+        const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP) {
     size_t rBgn, rEnd, tBgn, tEnd;
     tie(rBgn, rEnd) = rowRange;
     tie(tBgn, tEnd) = timestepRange;
@@ -172,32 +199,44 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
     ofstream fOut;
     fOut.open(fileOutName, ios_base::app);
     if(!fOut) { throw runtime_error(errorOutputFile); }
-    fOut.setf(ios_base::scientific);
-    fOut.precision(numeric_limits<double>::max_digits10);
 
     // File heading
     fOut<< "\nInput file: " << fileInName
-        << "\nCalculation results for:\n"
-        << " Rows      => " << to_string(rBgn) << " to " << to_string(rEnd)
-        <<'\n';
+        << "\nCalculation results";
     if (timestepConsistent) {
-        fOut << " Timesteps => " << to_string(tBgn) << " to " << to_string(tEnd)
-        <<'\n';
+        fOut<< "\nTimesteps         => "
+            << to_string(tBgn) << " to " << to_string(tEnd);
     }
-    fOut<< string(70, '`') << '\n';
+    fOut<< "\nRows              => "
+        << to_string(rBgn) << " to " << to_string(rEnd);
+    if (cycleP) {
+        DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getColNo())};
 
-    // File subheadings
-    fOut << "Calculations\\Columns,";
-    for (const int colNo : doubleColSet) {
-        fOut<< DoubleV::getOnePFromCol(colNo)->getColName() << ',';
+        fOut<< "\nColumn for cycles => "<< cycleColDVP->getColName()
+            << "\nCenter for cycles => "  << cycleP->getCenter()
+            << "\nNumber of cycles  => "  << cycleP->getCycleCount();
     }
+    fOut<< '\n' << string(70, '`') << '\n';
 
-    // File calculation results
-    for (const CmdArgs::CalcId id : calcIdSet) {
-        calcType calc{mapCalcIdToCalc<int>.at(id)};
-        fOut << '\n' << CalcFnc::mapCalcToStr<int>.at(calc) << ',';
+    if (calcP) {
+        if (cycleP && cycleP->getCycleCount()==0) {
+            throw logic_error(errorCycleInvalidForCalc);
+        }
+        fOut.setf(ios_base::scientific);
+        fOut.precision(numeric_limits<double>::max_digits10);
+
+        // File subheadings
+        fOut << "Calculations\\Columns,";
         for (const int colNo : doubleColSet) {
-            fOut << calc(colNo, rBgn, rEnd) << ',';
+            fOut<< DoubleV::getOnePFromCol(colNo)->getColName() << ',';
+        }
+        // File calculation results
+        for (const CmdArgs::CalcId id : calcIdSet) {
+            calcType calc{mapCalcIdToCalc<int>.at(id)};
+            fOut << '\n' << CalcFnc::mapCalcToStr<int>.at(calc) << ',';
+            for (const int colNo : doubleColSet) {
+                fOut << calc(colNo, rBgn, rEnd) << ',';
+            }
         }
     }
     fOut << '\n';

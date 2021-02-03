@@ -18,8 +18,6 @@
 inline const string
 
 helpIntro{
-"colDataUtil 0.2\n"
-"Copyright (C) 2021 Syed Ahmad Raza (git@ahmads.org)\n\n"
 "A utility program for loading, writing and performing calculations\n"
 "on column data in comma or space delimited files. This program has\n"
 "been written primarily for timestep column data obtained from solvers\n"

@@ -25,7 +25,6 @@ int main(int argc, char* argv[]) {
         CmdArgs::Args input(argc, argv);
         input.process();
         Output::output(&input);
-        // input.output();
     }
     catch (const invalid_argument& exception) {
         std::cerr
