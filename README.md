@@ -30,7 +30,32 @@ OPTIONS
         -h, --help
                 output this file and exit
 
-        -i, --input [FILENAME]
+        -i, --input <FILENAME>
+                specify the FILENAME of the file for processing; FILENAME is
+                mandatory
+
+        -r, --row [START] [END]
+                specify the starting row, or both the starting and the ending
+                row for calculations; index starts from zero
+
+        -t, --timestep [START] [END]
+                specify the starting timestep, or both the starting and the
+                ending timestep for calculations;
+                a correctly formatted timestep column is mandatory for this
+                option to work;
+                the timestep column should be an integer column with "step" in
+                its column header
+
+        -c, --col [COLUMN1, COLUMN2, ...]
+                specify the column (or columns) for calculations; column(s) can
+                be specified by its index (with index starting from zero) or its
+                exact name
+
+        -a, --calc, --calculations [CALCULATION1, CALCULATION2, ...]
+                specify the calculations to perform;
+                by default, following will be performed:...;
+                the names of all the possible calculation options are:
+                ...
 
 
 [To be continued... In the meanwhile, please contact the developer for further
