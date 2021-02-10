@@ -25,8 +25,8 @@ Args::Args(int argc, char* argv[]) :
   m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
   m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr},
   m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr}, m_cycleP{nullptr},
-  m_fileOutP{nullptr}, m_printDataP{nullptr}, m_fileDataP{nullptr},
-  m_versionP{nullptr} {
+  m_fourierP{nullptr}, m_fileOutP{nullptr},
+  m_printDataP{nullptr}, m_fileDataP{nullptr}, m_versionP{nullptr} {
     if (argc<=1) { throw logic_error(errorNoArguments); }
     for (s_c=1; s_c<m_argc; ++s_c) {
         if (m_argv[s_c][0] == '-') {
@@ -72,14 +72,6 @@ Args::Args(int argc, char* argv[]) :
                             throw invalid_argument(errorRowsAlreadySpecified);
                         }
                         break;
-                    case Option::cycle:
-                        if (!m_cycleP) {
-                            m_cycleP = new Cycle(s_c, m_argc, m_argv);
-                        }
-                        else {
-                            m_cycleP->init(s_c, m_argc, m_argv);
-                        }
-                        break;
                     case Option::timestep:
                         if (!m_timestepP) {
                             m_timestepP = new Timestep(s_c, m_argc, m_argv);
@@ -90,6 +82,22 @@ Args::Args(int argc, char* argv[]) :
                         else {
                             throw invalid_argument(
                                 errorTimestepsAlreadySpecified);
+                        }
+                        break;
+                    case Option::cycle:
+                        if (!m_cycleP) {
+                            m_cycleP = new Cycle(s_c, m_argc, m_argv);
+                        }
+                        else {
+                            m_cycleP->init(s_c, m_argc, m_argv);
+                        }
+                        break;
+                    case Option::fourier:
+                        if (!m_fourierP) {
+                            m_fourierP = new Fourier(s_c, m_argc, m_argv);
+                        }
+                        else {
+                            m_fourierP->init(s_c, m_argc, m_argv);
                         }
                         break;
                     case Option::fileOut:
@@ -224,6 +232,23 @@ void Args::process() {
             m_timestepP->setTimestepEndFromRow(rowFinal);
         }
     }
+    if (m_fourierP) {
+        if (m_cycleP) {
+            m_fourierP->process(
+                m_columnP->getDataDoubleVSetP(),
+                m_cycleP->getColNo(),
+                m_rowP->getRowBgn(), m_rowP->getRowEnd(),
+                m_fileInP->getFileLocation()
+            );
+        }
+        else {
+            m_fourierP->process(
+                m_columnP->getDataDoubleVSetP(), -1,
+                m_rowP->getRowBgn(), m_rowP->getRowEnd(),
+                m_fileInP->getFileLocation()
+            );
+        }
+    }
     if (m_calcP) { m_calcP->process(); }
     m_columnP->process(m_timestepP->getDataTimestepIVP());
 
@@ -246,6 +271,7 @@ const Column* Args::getColumnP() const          { return m_columnP; }
 const Row* Args::getRowP() const                { return m_rowP; }
 const Timestep* Args::getTimestepP() const      { return m_timestepP; }
 const Cycle* Args::getCycleP() const            { return m_cycleP; }
+const Fourier* Args::getFourierP() const        { return m_fourierP; }
 const FileOut* Args::getFileOutP() const        { return m_fileOutP; }
 const PrintData* Args::getPrintDataP() const    { return m_printDataP; }
 const FileData* Args::getFileDataP() const      { return m_fileDataP; }
@@ -351,12 +377,12 @@ void Calc::init(int c, int argC, const vector<string>& argV) {
 void Calc::process() {
     if (m_calcIdSet.empty()) {
         m_calcIdSet.insert(m_calcIdSet.end(), {
-            // CalcId::findMin,
-            // CalcId::findMax,
+            CalcId::findMin,
+            CalcId::findMax,
             // CalcId::findAbsMin,
             // CalcId::findAbsMax,
             CalcId::findMean,
-            // CalcId::findQuadraticMean,
+            CalcId::findQuadraticMean,
             // CalcId::findCubicMean,
         });
     }
@@ -838,6 +864,130 @@ const tuple<bool, bool> Cycle::getTimestepDefStatus() const {
 }
 
 //----------------------------------------------------------------------------//
+//***************************** CmdArgs::Fourier *****************************//
+//----------------------------------------------------------------------------//
+
+Fourier::Fourier(int c, int argC, const vector<string>& argV) {
+    init(c, argC, argV);
+}
+void Fourier::init(int c, int argC, const vector<string>& argV) {
+    while (c+1 < argC && argV[c+1][0] != '-' && m_fourierArgV.size() < 2) {
+        Args::setCount(++c);
+        ++m_fourierArgC;
+        m_fourierArgV.push_back(argV[c]);
+    }
+}
+
+// Fourier::Fourier(int c, int argC, const vector<string>& argV) {
+//     if (c+1 < argC && argV[c+1][0] != '-') {
+//         m_arg = argV[Args::setCount(++c)];
+//     }
+// }
+
+// void Fourier::processCommon(const size_t rowBgn, const size_t rowEnd,
+//         const string& fileInName) {
+//     get<0>(m_rowRange) = rowBgn;
+//     get<1>(m_rowRange) = rowEnd;
+
+//     string fileNameAffix{
+//         "_fft_c" + to_string(m_colNo) + "_r" + to_string(rowBgn) + "to"
+//         + to_string(rowEnd) + ".csv"
+//     };
+
+//     size_t pos;
+//     if ((pos = fileInName.find_last_of('.')) != string::npos) {
+//         m_fileFourierName = fileInName.substr(0, pos) + fileNameAffix;
+//     }
+//     else {
+//         m_fileFourierName = fileInName + fileNameAffix;
+//     }
+// }
+
+// void Fourier::process(const int colNo,
+//         const size_t rowBgn, const size_t rowEnd, const string& fileInName) {
+//     if (m_arg != "") {
+//         throw logic_error(errorFourierCycleColDefined);
+//     }
+//     m_colNo = colNo;
+//     processCommon(rowBgn, rowEnd, fileInName);
+// }
+
+void Fourier::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
+        const int colNo, const size_t rowBgn, const size_t rowEnd,
+        const string& fileInName) {
+    if (colNo>=0) {
+        m_colNo = colNo;
+    }
+    get<0>(m_rowRange) = rowBgn;
+    get<1>(m_rowRange) = rowEnd;
+
+    size_t pos;
+    for (string fourierArg : m_fourierArgV) {
+        if (m_fileFourierName == ""
+                && ((pos=fourierArg.find("o=")) != string::npos)) {
+            fourierArg.erase(0, pos+2);
+            m_fileFourierName = fourierArg + ".csv";
+        }
+        else if (m_colNo<0 && ((pos=fourierArg.find("c=")) != string::npos)) {
+            fourierArg.erase(0, pos+2);
+            if (all_of(fourierArg.begin(), fourierArg.end(), isdigit)) {
+                m_colNo = stoi(fourierArg);
+                for (ColData::DoubleV* dVP : dataDoubleVSetP) {
+                    if (m_colNo == dVP->getColNo()) {
+                        break;
+                    }
+                }
+            }
+            else {
+                for (ColData::DoubleV* dVP : dataDoubleVSetP) {
+                    if (fourierArg == dVP->getColName()) {
+                        m_colNo = dVP->getColNo();
+                        break;
+                    }
+                }
+            }
+            if (m_colNo<0) {
+                throw invalid_argument(errorColNoAbsent);
+            }
+        }
+        else if (m_colNo<0) {
+            for (ColData::DoubleV* dVP : dataDoubleVSetP) {
+                if (fourierArg == dVP->getColName()) {
+                    m_colNo = dVP->getColNo();
+                    break;
+                }
+            }
+            if (m_colNo<0) {
+                throw invalid_argument(errorFourierColNameInvalid);
+            }
+        }
+        else {
+            throw invalid_argument(errorFourierArgumetInvalid);
+        }
+    }
+    if (m_fileFourierName == "") {
+        string fileNameAffix{
+            "_fft_c" + to_string(m_colNo) + "_r" + to_string(rowBgn) + "to"
+            + to_string(rowEnd) + ".csv"
+        };
+        if ((pos = fileInName.find_last_of('.')) != string::npos) {
+            m_fileFourierName = fileInName.substr(0, pos) + fileNameAffix;
+        }
+        else {
+            m_fileFourierName = fileInName + fileNameAffix;
+        }
+    }
+}
+
+int Fourier::getColNo() const { return m_colNo; }
+const tuple<size_t, size_t> Fourier::getRowRange() const {
+    return m_rowRange;
+}
+const string& Fourier::getFileFourierName() const {
+    return m_fileFourierName;
+}
+
+//----------------------------------------------------------------------------//
 //***************************** CmdArgs::FileOut *****************************//
 //----------------------------------------------------------------------------//
 
@@ -888,12 +1038,13 @@ FileData::FileData(int c, int argC, const vector<string>& argV) {
     }
 }
 void FileData::process(const string& fileInName) {
+    string fileNameAffix{"_data.csv"};
     size_t pos;
     if ((pos = fileInName.find_last_of('.')) != string::npos) {
-        m_fileDataName = fileInName.substr(0, pos) + "_data.dat";
+        m_fileDataName = fileInName.substr(0, pos) + fileNameAffix;
     }
     else {
-        m_fileDataName = fileInName + "_data.dat";
+        m_fileDataName = fileInName + fileNameAffix;
     }
 }
 const string& FileData::getFileDataName() const { return m_fileDataName; }

@@ -24,7 +24,9 @@ inline const unordered_map<string, Option> CmdArgs::mapStrToOption {
     {"-r",              Option::row},
     {"-t",              Option::timestep},
     {"-y",              Option::cycle},
+    {"-f",              Option::fourier},
     {"-a",              Option::calculation},
+    {"-C",              Option::calculation},
     // {"-d",              Option::fileOut},
     {"-o",              Option::fileOut},
     {"-h",              Option::help},
@@ -44,6 +46,7 @@ inline const unordered_map<string, Option> CmdArgs::mapStrToOption {
     // {"--timesteps",     Option::timestep},
     {"--cycle",         Option::cycle},
     // {"--cycles",        Option::cycle},
+    {"--fourier",       Option::fourier},
     {"--calc",          Option::calculation},
     {"--calculation",   Option::calculation},
     // {"--destination",   Option::fileOut},
@@ -69,14 +72,15 @@ inline const unordered_map<string, CalcId> CmdArgs::mapStrToCalc {
     {"avg",                 CalcId::findMean},
     {"average",             CalcId::findMean},
     {"rms",                 CalcId::findQuadraticMean},
-    {"rms-mean",            CalcId::findQuadraticMean},
-    {"rms-avg",             CalcId::findQuadraticMean},
+    // {"rms-mean",            CalcId::findQuadraticMean},
+    // {"rms-avg",             CalcId::findQuadraticMean},
     {"quadratic",           CalcId::findQuadraticMean},
-    {"quadratic-rms",       CalcId::findQuadraticMean},
+    // {"quadratic-rms",       CalcId::findQuadraticMean},
     {"quadratic-mean",      CalcId::findQuadraticMean},
     {"cubic",               CalcId::findCubicMean},
     {"cubic-mean",          CalcId::findCubicMean},
     {"cubic-avg",           CalcId::findCubicMean},
+    // {"fourier",             CalcId::findFourier},
 };
 
 template<typename T> inline const unordered_map<CmdArgs::CalcId, calcType>
@@ -87,7 +91,8 @@ template<typename T> inline const unordered_map<CmdArgs::CalcId, calcType>
     {CmdArgs::CalcId::findAbsMax,         CalcFnc::findAbsMax},
     {CmdArgs::CalcId::findMean,           CalcFnc::findMean},
     {CmdArgs::CalcId::findQuadraticMean,  CalcFnc::findQuadraticMean},
-    {CmdArgs::CalcId::findCubicMean,      CalcFnc::findCubicMean}
+    {CmdArgs::CalcId::findCubicMean,      CalcFnc::findCubicMean},
+    // {CmdArgs::CalcId::findFourier,        CalcFnc::findFourier},
 };
 
 template<typename T>
@@ -98,7 +103,8 @@ inline const unordered_map<calcType, string> CalcFnc::mapCalcToStr {
     {CalcFnc::findAbsMax,        "absolute maximum"},
     {CalcFnc::findMean,          "mean"},
     {CalcFnc::findQuadraticMean, "quadratic mean (RMS)"},
-    {CalcFnc::findCubicMean,     "cubic mean"}
+    {CalcFnc::findCubicMean,     "cubic mean"},
+    // {CalcFnc::findFourier,       "fourier"}
 };
 
 inline const unordered_map<string, CycleInit> CmdArgs::mapStrToCycleInit {

@@ -60,6 +60,11 @@ void Output::output(CmdArgs::Args* argsP) {
             }
         }
     }
+    if (argsP->getFourierP()) {
+        fourierFiler(argsP->getFourierP());
+        cout<< "\nThe output has been written to \""
+            << argsP->getFourierP()->getFileFourierName() << "\"" << endl;
+    }
     if (argsP->getPrintDataP()) {
         dataPrinter(
             argsP->getPrintDataP()->getDelimiter(),
@@ -242,6 +247,67 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
     fOut << '\n';
     fOut.close();
 }
+
+//----------------------------------------------------------------------------//
+//******************* Filing Fast Fourier Transform results ******************//
+//----------------------------------------------------------------------------//
+/*
+ * File the results of Fast Fourier Transform.
+ */
+#include <complex>
+#include <fftw3.h>
+
+void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
+    const size_t
+        rowBgn{get<0>(fourierP->getRowRange())},
+        rowEnd{get<1>(fourierP->getRowRange())},
+        sampleFreq{rowEnd - rowBgn + 1},        // Fs
+        signalLen{sampleFreq},                  // L
+        outputLen{(signalLen/2)+1};
+
+    DoubleV* fourierColDVP{DoubleV::getOnePFromCol(fourierP->getColNo())};
+    vector<double> fourierColData{fourierColDVP->getData()};
+    vector<std::complex<double>> fftwData;
+    fftwData.reserve(signalLen);
+
+    fftw_plan plan{
+        fftw_plan_dft_1d(
+            signalLen,
+            reinterpret_cast<fftw_complex*>(&fftwData.data()[0]),
+            reinterpret_cast<fftw_complex*>(&fftwData.data()[0]),
+            FFTW_FORWARD,
+            FFTW_ESTIMATE
+        )
+    };
+
+    for (size_t r=0; r<signalLen; ++r) {
+        using namespace std::complex_literals;
+        fftwData.emplace_back(0i);
+        reinterpret_cast<double(&)[2]>(fftwData[r])[0]
+            = fourierColData[rowBgn+r];
+    }
+
+    fftw_execute(plan);
+
+    // Output the data
+    ofstream fOut{fourierP->getFileFourierName()};
+    fOut.precision(numeric_limits<double>::max_digits10);
+    fOut<< "Frequency"  << ','
+        << "Magnitude"  << ','
+        << "Phase"      << ','
+        << '\n';
+    double signalLenInv{1.0/signalLen};
+    for (size_t r=0; r<outputLen; ++r) {
+        fOut<< r << ','
+            << 2*std::abs(fftwData[r])*signalLenInv << ','
+            << std::arg(fftwData[r]) << ','
+            << '\n';
+    }
+    // Clean up
+    fOut.close();
+    fftw_destroy_plan(plan);
+}
+
 
 //----------------------------------------------------------------------------//
 //********************* Printing and filing loaded data **********************//

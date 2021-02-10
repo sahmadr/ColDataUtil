@@ -93,6 +93,10 @@ errorCycleTooFewArguments{"Too few arguments have been specified for the cycle "
 errorCycleTooManyArguments{"Too many arguments have been specified for the "
     "cycle option."},
 errorCycleInvalidForCalc{"No cycles were found for calculation."},
+errorFourierArgumetInvalid{"An invalid argument has been specified for the FFT "
+    "option."},
+errorFourierColNameInvalid{"The column name specified for the FFT option is "
+    "invalid."},
 errorInputFile{"Input file could not be opened."},
 errorOutputFile{"Output file could not be opened."},
 errorUnknown{"Unknown error. Please contact the developer."},

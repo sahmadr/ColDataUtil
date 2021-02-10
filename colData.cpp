@@ -109,7 +109,8 @@ DoubleV* DoubleV::getOnePFromCol(const int inputColNo) {
     for (DoubleV* dVP : s_doubleVSetP) {
         if (inputColNo == dVP->m_colNo) { id = dVP->m_id; }
     }
-    if (id<0) { throw runtime_error(errorColNoAbsent); }
+    if (id<0) { cout << "TEST00\n";
+        throw runtime_error(errorColNoAbsent); }
     return s_doubleVSetP[id];
 }
 DoubleV* DoubleV::getOnePFromCol(const string inputColName) {
@@ -416,8 +417,12 @@ tuple<string, Delimitation> ColData::parseHeaderLine(
         headerDlmType = Delimitation::spaced;
         oLine = iLine;
     }
-    else {
+    /* else {
         throw runtime_error(errorHeaderFormatIncorrect);
+    } */
+    else {
+        headerDlmType = Delimitation::spaced;
+        oLine = iLine;
     }
     return {oLine, headerDlmType};
 }

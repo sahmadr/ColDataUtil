@@ -115,4 +115,18 @@ double CalcFnc::findCubicMean(const T column,
             );
 }
 
+template<typename T> double findFourier(const T column,
+        const size_t rowBgn, const size_t rowEnd);
+/*
+ *
+ */
+template<typename T>
+double CalcFnc::findFourier(const T column,
+        const size_t rowBgn, const size_t rowEnd) {
+    return std::cbrt(
+                DoubleV::getOnePFromCol(column)->getSumOfCubes(rowBgn, rowEnd)
+                    /(rowEnd - rowBgn + 1)
+            );
+}
+
 #endif

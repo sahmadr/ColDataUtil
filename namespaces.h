@@ -20,6 +20,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <array>
 #include <tuple>
 #include <set>
 #include <limits>
@@ -28,7 +29,8 @@
 #include <cstddef>
 #include <cmath>
 
-using   std::string, std::vector, std::set, std::tuple, std::unordered_map,
+using   std::array,
+        std::string, std::vector, std::set, std::tuple, std::unordered_map,
         std::numeric_limits, std::tie, std::get, std::ios_base, std::to_string,
         std::cout, std::endl, std::flush, std::setw, std::left, std::right,
         std::istringstream, std::ostringstream,
@@ -79,9 +81,9 @@ namespace ColData {
 
 namespace CmdArgs {
     enum class Option { delimiter, fileIn, calculation, column, row, timestep,
-        cycle, fileOut, printData, fileData, help, version };
+        cycle, fourier, fileOut, printData, fileData, help, version };
     enum class CalcId { findMin, findMax, findAbsMin, findAbsMax, findMean,
-        findQuadraticMean, findCubicMean };
+        findQuadraticMean, findCubicMean, findFourier };
     enum class CycleInit { first, last, full, empty };
     class Args;
     class Delimiter;
@@ -91,6 +93,7 @@ namespace CmdArgs {
     class Row;
     class Timestep;
     class Cycle;
+    class Fourier;
     class FileOut;
     class PrintData;
     class FileData;
@@ -121,6 +124,8 @@ namespace CalcFnc {
         const size_t rowBgn, const size_t rowEnd);
     template<typename T> double findCubicMean(const T column,
         const size_t rowBgn, const size_t rowEnd);
+    template<typename T> double findFourier(const T column,
+        const size_t rowBgn, const size_t rowEnd);
 }
 
 //----------------------------------------------------------------------------//
@@ -145,6 +150,7 @@ namespace Output {
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet,
         const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP);
+    void fourierFiler(const CmdArgs::Fourier* fourierP);
     void dataPrinter(const string& dlm, const size_t dataRowTotal,
         const ColData::IntV* dataTimestepIVP,
         const vector<ColData::DoubleV*> dataDoubleVSetP);

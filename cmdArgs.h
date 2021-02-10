@@ -35,6 +35,7 @@ class CmdArgs::Args {
     Row*                     m_rowP;         // range of rows
     Timestep*                m_timestepP;    // range of timesteps
     Cycle*                   m_cycleP;       // number of cycles
+    Fourier*                 m_fourierP;     // Fourier transform (FFT)
     FileOut*                 m_fileOutP;     // file where to save calculations
     PrintData*               m_printDataP;   // print data to the screen
     FileData*                m_fileDataP;    // file data to a file
@@ -62,6 +63,7 @@ class CmdArgs::Args {
     const Row* getRowP() const;
     const Timestep* getTimestepP() const;
     const Cycle* getCycleP() const;
+    const Fourier* getFourierP() const;
     const FileOut* getFileOutP() const;
     const PrintData* getPrintDataP() const;
     const FileData* getFileDataP() const;
@@ -282,6 +284,40 @@ class CmdArgs::Cycle {
     const tuple<size_t, size_t> getTimestepDefRange() const;
     const tuple<bool, bool> getRowDefStatus() const;
     const tuple<bool, bool> getTimestepDefStatus() const;
+};
+
+//----------------------------------------------------------------------------//
+//***************************** CmdArgs::Fourier *****************************//
+//----------------------------------------------------------------------------//
+
+class CmdArgs::Fourier {
+  private:
+    size_t                  m_fourierArgC{0};
+    vector<string>          m_fourierArgV{};
+    int                     m_colNo{-1};
+    tuple<size_t, size_t>   m_rowRange{0, 0};
+    string                  m_fileFourierName{""};
+
+    Fourier() = delete;
+    Fourier(const Fourier&) = delete;
+    Fourier& operator=(const Fourier&) = delete;
+
+  public:
+    explicit Fourier(int c, int argC, const vector<string>& argV);
+
+    void init(int c, int argC, const vector<string>& argV);
+
+    // void processCommon(const size_t rowBgn, const size_t rowEnd,
+    // const string& fileInName);
+    // void process(const int colNo, const size_t rowBgn, const size_t rowEnd,
+    //     const string& fileInName);
+    void process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
+        const int colNo, const size_t rowBgn, const size_t rowEnd,
+        const string& fileInName);
+
+    int getColNo() const;
+    const tuple<size_t, size_t> getRowRange() const;
+    const string& getFileFourierName() const;
 };
 
 //----------------------------------------------------------------------------//

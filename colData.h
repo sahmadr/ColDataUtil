@@ -59,13 +59,13 @@ class ColData::IntV {
     // static IntV* getOnePFromCol(const string inputColName);
     template<typename T>
     IntV* getOnePFromCol(const T inputCol) {
-    int id{-1};
-    T col{inputCol};
-    for (IntV* iVP : s_intVSetP) {
-        if (inputCol == iVP->getCol(col)) { id = iVP->m_id; }
-    }
-    if (id<0) { throw runtime_error(errorColAbsent); }
-    return s_intVSetP[id];
+        int id{-1};
+        T col{inputCol};
+        for (IntV* iVP : s_intVSetP) {
+            if (inputCol == iVP->getCol(col)) { id = iVP->m_id; }
+        }
+        if (id<0) { throw runtime_error(errorColAbsent); }
+        return s_intVSetP[id];
     }
 };
 

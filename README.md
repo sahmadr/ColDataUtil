@@ -54,8 +54,16 @@ OPTIONS
         -a, --calc, --calculations [CALCULATION1, CALCULATION2, ...]
                 specify the calculations to perform;
                 by default, following will be performed:...;
-                the names of all the possible calculation options are:
-                ...
+                the names of all the possible calculation options are given
+                below, followed by the possible keywords that can be used to
+                call them:
+                1.  Minimum: min, minimum
+                2.  Maximum: max, maximum
+                3.  Absolute minimum: abs-min, absmin, absolute-minimum
+                4.  Absolute maximum: abs-max, absmax, absolute-maximum
+                5.  Mean: mean, avg, average
+                6.  Quadratic mean (RMS): rms, quadratic, quadratic-mean
+                7.  Cubic mean: cubic, cubic-mean, cubic-avg
 
 
 [To be continued... In the meanwhile, please contact the developer for further
