@@ -297,8 +297,10 @@ void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
         << "Phase"      << ','
         << '\n';
     double signalLenInv{1.0/signalLen};
+    double outputLenInv{1.0/outputLen};
+    // double outputLenInv{1.0/(signalLen/2)};  // Matches with Teclplot
     for (size_t r=0; r<outputLen; ++r) {
-        fOut<< r << ','
+        fOut<< static_cast<double>(r)*outputLenInv*100 << ','
             << 2*std::abs(fftwData[r])*signalLenInv << ','
             << std::arg(fftwData[r]) << ','
             << '\n';
