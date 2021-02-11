@@ -158,27 +158,34 @@ tuple<int, size_t, size_t> DoubleV::findCycles(const size_t rowBgn,
     if (rowEnd == (m_data.size()-1)) { --rowLast; }
 
     while (r<=rowLast) {
-        if (signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)) {
+        if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
+                || (m_data[r] == mean)) {
             foundInitial = true;
             if (std::abs(m_data[r] - mean) < std::abs(m_data[r+1] - mean)) {
                 rowInitial = r;
-                crossings = -1;
-                break;
+                if ((m_data[r] != mean)
+                        || (m_data[r] == mean
+                            && signbit(m_data[r]) != signbit(mean))
+                        ) {
+                    crossings = -1;
+                }
             }
             else {
                 rowInitial = r+1;
-                break;
             }
+            break;
         }
         ++r;
     }
     if (!foundInitial) {
         throw runtime_error(errorDataInvalid);
     }
+    cout << "crossings = " << crossings << '\n';
 
     r = rowInitial;
     while (r<=rowLast) {
-        if (signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)) {
+        if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
+                || (m_data[r+1] == mean)) {
             ++crossings;
             if (crossings == maxCrossings) {
                 ++cycles;
@@ -202,27 +209,34 @@ tuple<int, size_t, size_t> DoubleV::findCyclesFirst(const size_t rowBgn,
     if (rowEnd == (m_data.size()-1)) { --rowLast; }
 
     while (r<=rowLast) {
-        if (signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)) {
+        if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
+                || (m_data[r] == mean)) {
             foundInitial = true;
             if (std::abs(m_data[r] - mean) < std::abs(m_data[r+1] - mean)) {
                 rowInitial = r;
-                crossings = -1;
-                break;
+                if ((m_data[r] != mean)
+                        || (m_data[r] == mean
+                            && signbit(m_data[r]) != signbit(mean))
+                        ) {
+                    crossings = -1;
+                }
             }
             else {
                 rowInitial = r+1;
-                break;
             }
+            break;
         }
         ++r;
     }
     if (!foundInitial) {
         throw runtime_error(errorDataInvalid);
     }
+    cout << "crossings = " << crossings << '\n';
 
     r = rowInitial;
     while (r<=rowLast && cycleCount<cycles) {
-        if (signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)) {
+        if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
+                || (m_data[r+1] == mean)) {
             ++crossings;
             if (crossings == maxCrossings) {
                 ++cycleCount;
@@ -245,33 +259,40 @@ tuple<int, size_t, size_t> DoubleV::findCyclesLast(const size_t rowBgn,
     bool foundFinal{false};
     int cycleCount{0}, crossings{0}, maxCrossings{2};
 
-    if (rowBgn == 0)                 { ++rowFirst; }
-    if (rowEnd != (m_data.size()-1)) { ++r; }
+    if (rowBgn == 0)                { ++rowFirst; }
+    if (rowEnd < (m_data.size()-1)) { ++r; }
     // if (rowBgn>0)                    { --r; }
     // if (rowEnd == (m_data.size()-1)) { --rowLast; }
 
     while (r>=rowFirst) {
-        if (signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean)) {
+        if ((signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean))
+                || (m_data[r] == mean)) {
             foundFinal = true;
             if (std::abs(m_data[r] - mean) < std::abs(m_data[r-1] - mean)) {
                 rowFinal = r;
-                crossings = -1;
-                break;
+                if ((m_data[r] != mean)
+                        || (m_data[r] == mean
+                            && signbit(m_data[r]) != signbit(mean))
+                        ) {
+                    crossings = -1;
+                }
             }
             else {
                 rowFinal = r-1;
-                break;
             }
+            break;
         }
         --r;
     }
     if (!foundFinal) {
         throw runtime_error(errorDataInvalid);
     }
+    cout << "crossings = " << crossings << '\n';
 
     r = rowFinal;
     while (r>=rowFirst && cycleCount<cycles) {
-        if (signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean)) {
+        if ((signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean))
+                || (m_data[r-1] == mean)) {
             ++crossings;
             if (crossings == maxCrossings) {
                 ++cycleCount;

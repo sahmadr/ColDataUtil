@@ -878,40 +878,6 @@ void Fourier::init(int c, int argC, const vector<string>& argV) {
     }
 }
 
-// Fourier::Fourier(int c, int argC, const vector<string>& argV) {
-//     if (c+1 < argC && argV[c+1][0] != '-') {
-//         m_arg = argV[Args::setCount(++c)];
-//     }
-// }
-
-// void Fourier::processCommon(const size_t rowBgn, const size_t rowEnd,
-//         const string& fileInName) {
-//     get<0>(m_rowRange) = rowBgn;
-//     get<1>(m_rowRange) = rowEnd;
-
-//     string fileNameAffix{
-//         "_fft_c" + to_string(m_colNo) + "_r" + to_string(rowBgn) + "to"
-//         + to_string(rowEnd) + ".csv"
-//     };
-
-//     size_t pos;
-//     if ((pos = fileInName.find_last_of('.')) != string::npos) {
-//         m_fileFourierName = fileInName.substr(0, pos) + fileNameAffix;
-//     }
-//     else {
-//         m_fileFourierName = fileInName + fileNameAffix;
-//     }
-// }
-
-// void Fourier::process(const int colNo,
-//         const size_t rowBgn, const size_t rowEnd, const string& fileInName) {
-//     if (m_arg != "") {
-//         throw logic_error(errorFourierCycleColDefined);
-//     }
-//     m_colNo = colNo;
-//     processCommon(rowBgn, rowEnd, fileInName);
-// }
-
 void Fourier::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
         const int colNo, const size_t rowBgn, const size_t rowEnd,
         const string& fileInName) {
