@@ -35,7 +35,7 @@ class ColData::IntV {
     IntV& operator=(const IntV&) = delete;
 
   public:
-    explicit IntV(int colNo, string colName);
+    explicit IntV(int colNo, string colName, size_t dataRowTotal);
 
     void addValue(int value);
     static void insertColNoSet(int);
@@ -88,7 +88,7 @@ class ColData::DoubleV {
     DoubleV& operator=(const DoubleV&) = delete;
 
   public:
-    explicit DoubleV(int colNo, string colName);
+    explicit DoubleV(int colNo, string colName, size_t dataRowTotal);
 
     void addValue(double value);
     static void insertColNoSet(int colNo);

@@ -53,7 +53,7 @@ namespace ColData {
     const tuple<Delimitation, int, size_t, IntV*, vector<DoubleV*>&> loadData(
         const string& fileName, const string& dlm);
     bool isNumberLine(stringV lineStr, string dlm);
-    tuple<streampos, streampos> findLinePositions(ifstream& iFile,
+    tuple<size_t, streampos, streampos> findLinePositions(ifstream& iFile,
         const string& dlm);
     tuple<string, Delimitation> parseHeaderLine(ifstream& iFile,
         const string& dlm, const streampos headerLinePos);
@@ -66,10 +66,12 @@ namespace ColData {
     void classifyColumns(ifstream& iFile, const string& dlm,
         const Delimitation dataDlmType, const streampos dataLinePos,
         const int colTotal, set<int>& timestepColCandidates);
-    void createVectors(const vector<string>& colNames);
-    size_t populateVectors(ifstream& iFile, const string& dlm,
+    size_t findDataRowTotal(ifstream& iFile, const streampos dataLinePos);
+    void createVectors(const vector<string>& colNames,
+        const size_t dataRowTotal);
+    void populateVectors(ifstream& iFile, const string& dlm,
         const int dataColTotal, const Delimitation dataDlmType,
-        const streampos dataLinePos);
+        const streampos dataLinePos, const size_t dataRowTotal);
 }
 
 //----------------------------------------------------------------------------//

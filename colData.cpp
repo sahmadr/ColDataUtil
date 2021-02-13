@@ -19,13 +19,14 @@ using namespace ColData;
 //----------------------------------------------------------------------------//
 //*************************** ColData::IntV Class ****************************//
 //----------------------------------------------------------------------------//
-IntV::IntV(int colNo, string colName) :
+IntV::IntV(int colNo, string colName, size_t dataRowTotal) :
   m_id{s_total++}, m_colNo{colNo}, m_colName{colName}, m_data{} {
     for (IntV* iVP : s_intVSetP) {
         if (m_colName == iVP->m_colName) {
             throw runtime_error(errorColNameInt);
         }
     }
+    m_data.reserve(dataRowTotal);
     s_intVSetP.push_back(this);
 }
 void IntV::addValue(int value)          { m_data.push_back(value); }
@@ -81,13 +82,14 @@ IntV* IntV::getOnePFromCol(const string inputColName) {
 //----------------------------------------------------------------------------//
 //************************** ColData::DoubleV Class **************************//
 //----------------------------------------------------------------------------//
-DoubleV::DoubleV(int colNo, string colName) :
+DoubleV::DoubleV(int colNo, string colName, size_t dataRowTotal) :
   m_id{s_total++}, m_colNo{colNo}, m_colName{colName}, m_data{} {
     for (DoubleV* dVP : s_doubleVSetP) {
         if (m_colName == dVP->m_colName) {
             throw runtime_error(errorColNameDouble);
         }
     }
+    m_data.reserve(dataRowTotal);
     s_doubleVSetP.push_back(this);
 }
 void DoubleV::addValue(double value)          { m_data.push_back(value); }
@@ -319,8 +321,10 @@ const tuple<Delimitation, int, size_t, IntV*, vector<DoubleV*>&>
     else { cout << "File found. Program initiated." << flush; }
 
     // Process the header ----------------------------------------------------//
+    size_t nonDataLines;
     streampos headerLinePos, dataLinePos;
-    tie(headerLinePos, dataLinePos) = findLinePositions(iFile, dlm);
+    tie(nonDataLines, headerLinePos, dataLinePos) =
+        findLinePositions(iFile, dlm);
 
     string headerLine;
     Delimitation headerDlmType;
@@ -340,13 +344,13 @@ const tuple<Delimitation, int, size_t, IntV*, vector<DoubleV*>&>
     cout << "\rIn progress: Parsing column data..." << flush;
     classifyColumns(iFile, dlm, dataDlmType, dataLinePos, dataColTotal,
                     timeStepColCandidates);
+    const size_t dataRowTotal{findDataRowTotal(iFile, dataLinePos)};
 
     // Store the data --------------------------------------------------------//
-    createVectors(colNames);
+    createVectors(colNames, dataRowTotal);
     cout << "\rIn progress: Processing column data..." << flush;
-    const size_t dataRowTotal{
-        populateVectors(iFile, dlm, dataColTotal, dataDlmType, dataLinePos)
-    };
+    populateVectors(iFile, dlm, dataColTotal, dataDlmType, dataLinePos,
+                    dataRowTotal);
     cout << '\r' << string(38, ' ') << "\n" << flush;
     iFile.close();
 
@@ -373,11 +377,12 @@ bool ColData::isNumberLine(stringV lineStr, string dlm) {
 /*
  * Return the header line position.
  */
-tuple<streampos, streampos> ColData::findLinePositions(ifstream& iFile,
+tuple<size_t, streampos, streampos> ColData::findLinePositions(ifstream& iFile,
         const string& dlm) {
+    size_t nonDataLines{0};
     string line;
-    iFile.clear(), iFile.seekg(0);
     streampos currentPos{0}, lastPos{0}, headerLinePos{0}, dataLinePos{0};
+    iFile.clear(), iFile.seekg(0);
 
     while (getline(iFile, line)) {
         lastPos = currentPos;
@@ -391,8 +396,12 @@ tuple<streampos, streampos> ColData::findLinePositions(ifstream& iFile,
                 break;
             }
         }
+        ++nonDataLines;
     }
-    return {headerLinePos, dataLinePos};
+    if (nonDataLines == 0) {
+        throw runtime_error(errorNoHeader);
+    }
+    return {nonDataLines, headerLinePos, dataLinePos};
 }
 
 /*
@@ -590,24 +599,39 @@ void ColData::classifyColumns(ifstream& iFile, const string& dlm,
 }
 
 /*
+ * Find the total number of rows of data in the given file.
+ */
+size_t ColData::findDataRowTotal(ifstream& iFile, const streampos dataLinePos) {
+    size_t dataRowTotal{0};
+    string line;
+    iFile.clear(), iFile.seekg(dataLinePos);
+
+    while(getline(iFile, line)) {
+        if (!all_of(line.cbegin(), line.cend(), isspace)) { ++dataRowTotal; }
+    }
+    return dataRowTotal;
+}
+
+/*
  * Create vectors for storing column data using the first line of the file.
  */
-void ColData::createVectors(const vector<string>& colNames) {
+void ColData::createVectors(const vector<string>& colNames,
+        const size_t dataRowTotal) {
     for (int colNo : IntV::getColNoSet()) {
-        new IntV(colNo, colNames[colNo]);
+        new IntV(colNo, colNames[colNo], dataRowTotal);
     }
     for (int colNo : DoubleV::getColNoSet()) {
-        new DoubleV(colNo, colNames[colNo]);
+        new DoubleV(colNo, colNames[colNo], dataRowTotal);
     }
 }
 
 /*
  * Populate the column vectors by reading the respective column data from file.
  */
-size_t ColData::populateVectors(ifstream& iFile, const string& dlm,
+void ColData::populateVectors(ifstream& iFile, const string& dlm,
         const int dataColTotal, const Delimitation dataDlmType,
-        const streampos dataLinePos) {
-    size_t pos{0}, dataRowTotal{0}, dlmLen{dlm.length()};
+        const streampos dataLinePos, const size_t dataRowTotal) {
+    size_t pos{0}, dlmLen{dlm.length()};
     string line;
     vector<IntV*> iVSetP{IntV::getSetP()};
     vector<DoubleV*> dVSetP{DoubleV::getSetP()};
@@ -629,7 +653,6 @@ size_t ColData::populateVectors(ifstream& iFile, const string& dlm,
                     iVSetP[iIndex++]->addValue(stoi(numStr));
                 }
             }
-            ++dataRowTotal;
         }
     }
     else {
@@ -650,7 +673,6 @@ size_t ColData::populateVectors(ifstream& iFile, const string& dlm,
                 }
                 line.erase(0, pos+dlmLen);
             }
-        ++dataRowTotal;
         }
     }
     // Match the number of lines of data:
@@ -664,7 +686,6 @@ size_t ColData::populateVectors(ifstream& iFile, const string& dlm,
     if (dataRowTotal == 0 || !matchLineCount) {
         throw runtime_error(errorDlmFormatIncorrect);
     }
-    return dataRowTotal;
 }
 
 /* First correctly working attempt with cycles starting anywhere!

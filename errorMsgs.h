@@ -37,6 +37,7 @@ errorColNameDouble{"Double vector column name repeated. Please change one of "
     "the column names."},
 errorColNameInt{"Integer vector column name repeated. Please change one of the "
     "column names."},
+errorNoHeader{"The header line is missing in the file."},
 errorHeaderFormatIncorrect{"An incorrect format has been used for the header "
     "line in the file."},
 errorDlmFormatIncorrect{"An incorrect delimiter has been specified OR an "
