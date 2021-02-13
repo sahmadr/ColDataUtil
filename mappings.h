@@ -48,7 +48,7 @@ inline const unordered_map<string, Option> CmdArgs::mapStrToOption {
     // {"--cycles",        Option::cycle},
     {"--fourier",       Option::fourier},
     {"--calc",          Option::calculation},
-    {"--calculation",   Option::calculation},
+    // {"--calculation",   Option::calculation},
     // {"--destination",   Option::fileOut},
     {"--output",        Option::fileOut},
     {"--print-data",    Option::printData},

@@ -50,8 +50,8 @@ errorHeaderDlmTypeUndefined{"The delimiter type of header was undefined. This "
     "this issue. Thank you."},
 errorDataFormatIncorrect{"An incorrect format has been used for the numeric "
     "data in the file."},
-errorDataInvalid{"Invalid data entered. Data does not cross the given center "
-    "value."},
+errorDataInvalid{"Invalid data or range specified. Data does not cross the "
+    "center value in this data range."},
 errorColNameAbsent{"Requested column name not found."},
 errorColNoAbsent{"Requested column number not found."},
 errorColAbsent{"Requested column not found."},
@@ -97,6 +97,7 @@ errorFourierArgumetInvalid{"An invalid argument has been specified for the FFT "
     "option."},
 errorFourierColNameInvalid{"The column name specified for the FFT option is "
     "invalid."},
+errorFourierColMissing{"The column name for the FFT option is missing."},
 errorInputFile{"Input file could not be opened."},
 errorOutputFile{"Output file could not be opened."},
 errorUnknown{"Unknown error. Please contact the developer."},

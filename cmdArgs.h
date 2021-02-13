@@ -24,22 +24,23 @@
 
 class CmdArgs::Args {
   private:
-    inline static int        s_c{0};         // current count of processed args.
-    const int                m_argc;         // total number of arguments
-    const vector<string>     m_argv;         // complete set of arguments
-    const string             m_programName;  // program name
-    Delimiter*               m_delimiterP;   // delimiter
-    FileIn*                  m_fileInP;      // file with data to be processed
-    Calc*                    m_calcP;        // value functions to be calculated
-    Column*                  m_columnP;      // columns to be processed
-    Row*                     m_rowP;         // range of rows
-    Timestep*                m_timestepP;    // range of timesteps
-    Cycle*                   m_cycleP;       // number of cycles
-    Fourier*                 m_fourierP;     // Fourier transform (FFT)
-    FileOut*                 m_fileOutP;     // file where to save calculations
-    PrintData*               m_printDataP;   // print data to the screen
-    FileData*                m_fileDataP;    // file data to a file
-    Version*                 m_versionP;     // version information
+    inline static int       s_c{0};         // current count of processed args.
+    const int               m_argc;         // total number of arguments
+    const vector<string>    m_argv;         // complete set of arguments
+    const string            m_programName;  // program name
+    Delimiter*              m_delimiterP;   // delimiter
+    FileIn*                 m_fileInP;      // file with data to be processed
+    Calc*                   m_calcP;        // value functions to be calculated
+    Column*                 m_columnP;      // columns to be processed
+    Row*                    m_rowP;         // range of rows
+    Timestep*               m_timestepP;    // range of timesteps
+    Cycle*                  m_cycleP;       // number of cycles
+    Fourier*                m_fourierP;     // Fourier transform (FFT)
+    FileOut*                m_fileOutP;     // file where to save calculations
+    PrintData*              m_printDataP;   // print data to the screen
+    FileData*               m_fileDataP;    // file data to a file
+    Help*                   m_helpP;        // help
+    Version*                m_versionP;     // version information
 
     Args() = delete;
     Args(const Args&) = delete;
@@ -67,6 +68,7 @@ class CmdArgs::Args {
     const FileOut* getFileOutP() const;
     const PrintData* getPrintDataP() const;
     const FileData* getFileDataP() const;
+    const Help* getHelpP() const;
     const Version* getVersionP() const;
 
     void resolveRowVsTimestep();
@@ -307,10 +309,6 @@ class CmdArgs::Fourier {
 
     void init(int c, int argC, const vector<string>& argV);
 
-    // void processCommon(const size_t rowBgn, const size_t rowEnd,
-    // const string& fileInName);
-    // void process(const int colNo, const size_t rowBgn, const size_t rowEnd,
-    //     const string& fileInName);
     void process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
         const int colNo, const size_t rowBgn, const size_t rowEnd,
         const string& fileInName);
@@ -377,6 +375,25 @@ class CmdArgs::FileData {
 };
 
 //----------------------------------------------------------------------------//
+//****************************** CmdArgs::Help *******************************//
+//----------------------------------------------------------------------------//
+
+class CmdArgs::Help {
+  private:
+    const string
+        m_helpFileName {"README.md"};
+
+    Help(const Help&) = delete;
+    Help& operator=(const Help&) = delete;
+
+  public:
+    explicit Help() = default;
+    const string& getHelpFileName() const;
+};
+
+//----------------------------------------------------------------------------//
+
+//----------------------------------------------------------------------------//
 //***************************** CmdArgs::Version *****************************//
 //----------------------------------------------------------------------------//
 
@@ -384,7 +401,7 @@ class CmdArgs::Version {
   private:
     const string
         m_program     {"ColDataUtil"},
-        m_version     {"0.4"},
+        m_version     {"1.0"},
         m_copyright   {"Copyright (C) 2020"},
         m_author      {"Syed Ahmad Raza"},
         m_email       {"git@ahmads.org"},

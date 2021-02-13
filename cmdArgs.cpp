@@ -24,9 +24,10 @@ using namespace CmdArgs;
 Args::Args(int argc, char* argv[]) :
   m_argc{argc}, m_argv{argv, argv+argc}, m_programName{argv[0]},
   m_delimiterP{nullptr}, m_fileInP{nullptr}, m_calcP{nullptr},
-  m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr}, m_cycleP{nullptr},
-  m_fourierP{nullptr}, m_fileOutP{nullptr},
-  m_printDataP{nullptr}, m_fileDataP{nullptr}, m_versionP{nullptr} {
+  m_columnP{nullptr}, m_rowP{nullptr}, m_timestepP{nullptr},
+  m_cycleP{nullptr}, m_fourierP{nullptr},
+  m_fileOutP{nullptr}, m_printDataP{nullptr}, m_fileDataP{nullptr},
+  m_helpP{nullptr}, m_versionP{nullptr} {
     if (argc<=1) { throw logic_error(errorNoArguments); }
     for (s_c=1; s_c<m_argc; ++s_c) {
         if (m_argv[s_c][0] == '-') {
@@ -119,6 +120,9 @@ Args::Args(int argc, char* argv[]) :
                         }
                         break;
                     case Option::help:
+                        if (!m_helpP) {
+                            m_helpP = new Help();
+                        }
                         break;
                     case Option::version:
                         if (!m_versionP) {
@@ -146,6 +150,7 @@ Args::Args(int argc, char* argv[]) :
  */
 void Args::process() {
     // Before loading file ---------------------------------------------------//
+    if (m_helpP) { return; }
     if (m_versionP) { return; }
     if (!m_delimiterP) { m_delimiterP = new Delimiter(); }
     if (!m_fileInP) { throw invalid_argument(errorFileInMissing); }
@@ -275,6 +280,7 @@ const Fourier* Args::getFourierP() const        { return m_fourierP; }
 const FileOut* Args::getFileOutP() const        { return m_fileOutP; }
 const PrintData* Args::getPrintDataP() const    { return m_printDataP; }
 const FileData* Args::getFileDataP() const      { return m_fileDataP; }
+const Help* Args::getHelpP() const              { return m_helpP; }
 const Version* Args::getVersionP() const        { return m_versionP; }
 
 void Args::resolveRowVsTimestep() {
@@ -831,7 +837,7 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP) {
         m_cycleInit = CycleInit::last;
     }
 
-    cout<< "\n Cycle arguments:\n"
+    /* cout<< "\n Cycle arguments:\n"
         << (m_cycleInit==CycleInit::empty ? " CycleInit::empty" :
             (m_cycleInit==CycleInit::first ? " CycleInit::first" :
              (m_cycleInit==CycleInit::last ? " CycleInit::last" :
@@ -842,7 +848,7 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP) {
         << "\n CycleRow1      = " << get<0>(m_cycleRow)
         << "\n CycleRow2      = " << get<1>(m_cycleRow)
         << "\n CycleTimestep1 = " << get<0>(m_cycleTimestep)
-        << "\n CycleTimestep2 = " << get<1>(m_cycleTimestep) << '\n';
+        << "\n CycleTimestep2 = " << get<1>(m_cycleTimestep) << '\n'; */
 }
 void Cycle::setCycleCount(int cycles)   { m_cycleCount = cycles; }
 int Cycle::getCycleCount() const        { return m_cycleCount; }
@@ -931,13 +937,28 @@ void Fourier::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
             throw invalid_argument(errorFourierArgumetInvalid);
         }
     }
+    if (m_colNo<0) {
+        throw logic_error(errorFourierColMissing);
+    }
     if (m_fileFourierName == "") {
         string fileNameAffix{
             "_fft_c" + to_string(m_colNo) + "_r" + to_string(rowBgn) + "to"
             + to_string(rowEnd) + ".csv"
         };
-        if ((pos = fileInName.find_last_of('.')) != string::npos) {
-            m_fileFourierName = fileInName.substr(0, pos) + fileNameAffix;
+        size_t posBgn{0};
+        string temp;
+        if (fileInName[0] == '.') {
+            if (fileInName[1] == '.') {
+                posBgn = 2;
+            }
+            else {
+                posBgn = 1;
+            }
+        }
+        temp = fileInName.substr(posBgn, fileInName.length());
+        if ((pos = temp.find_last_of('.')) != string::npos) {
+            m_fileFourierName = fileInName.substr(posBgn, pos+posBgn)
+                                + fileNameAffix;
         }
         else {
             m_fileFourierName = fileInName + fileNameAffix;
@@ -968,13 +989,27 @@ void FileOut::init(int c, int argC, const vector<string>& argV) {
 }
 void FileOut::process(const string& fileInName) {
     if (m_fileOutLocSet.empty()) {
-        string fileOutName;
         size_t pos;
-        if ((pos = fileInName.find_last_of('.')) != string::npos) {
-            fileOutName = fileInName.substr(0, pos) + "_calc.csv";
+        size_t posBgn{0};
+        string fileOutName;
+        string temp;
+        string fileNameAffix{"_calc.csv"};
+
+        if (fileInName[0] == '.') {
+            if (fileInName[1] == '.') {
+                posBgn = 2;
+            }
+            else {
+                posBgn = 1;
+            }
+        }
+        temp = fileInName.substr(posBgn, fileInName.length());
+        if ((pos = temp.find_last_of('.')) != string::npos) {
+            fileOutName = fileInName.substr(posBgn, pos+posBgn)
+                            + fileNameAffix;
         }
         else {
-            fileOutName = fileInName + "_calc.csv";
+            fileOutName = fileInName + fileNameAffix;
         }
         m_fileOutLocSet.push_back(fileOutName);
     }
@@ -1004,17 +1039,39 @@ FileData::FileData(int c, int argC, const vector<string>& argV) {
     }
 }
 void FileData::process(const string& fileInName) {
-    string fileNameAffix{"_data.csv"};
     size_t pos;
-    if ((pos = fileInName.find_last_of('.')) != string::npos) {
-        m_fileDataName = fileInName.substr(0, pos) + fileNameAffix;
+    size_t posBgn{0};
+    string fileOutName;
+    string temp;
+    string fileNameAffix{"_data.csv"};
+
+    if (fileInName[0] == '.') {
+        if (fileInName[1] == '.') {
+            posBgn = 2;
+        }
+        else {
+            posBgn = 1;
+        }
+    }
+    temp = fileInName.substr(posBgn, fileInName.length());
+    if ((pos = temp.find_last_of('.')) != string::npos) {
+        fileOutName = fileInName.substr(posBgn, pos+posBgn)
+                        + fileNameAffix;
     }
     else {
-        m_fileDataName = fileInName + fileNameAffix;
+        fileOutName = fileInName + fileNameAffix;
     }
 }
 const string& FileData::getFileDataName() const { return m_fileDataName; }
 const string& FileData::getDelimiter() const    { return m_delimiter; }
+
+//----------------------------------------------------------------------------//
+//****************************** CmdArgs::Help *******************************//
+//----------------------------------------------------------------------------//
+
+const string& Help::getHelpFileName() const { return m_helpFileName; }
+
+//----------------------------------------------------------------------------//
 
 //----------------------------------------------------------------------------//
 //***************************** CmdArgs::Version *****************************//

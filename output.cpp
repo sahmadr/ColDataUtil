@@ -19,6 +19,11 @@
  * Perform the output operations based on user input.
  */
 void Output::output(CmdArgs::Args* argsP) {
+    if (argsP->getHelpP()) {
+        ifstream hF(argsP->getHelpP()->getHelpFileName());
+        if (hF.is_open()) { cout << hF.rdbuf(); }
+        return;
+    }
     if (argsP->getVersionP()) {
         cout << argsP->getVersionP()->getMsg();
         return;
