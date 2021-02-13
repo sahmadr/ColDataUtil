@@ -1,11 +1,9 @@
 /**
- * @file        colData.h
- *
- * @project     ColDataUtil
- * @version     0.4
- *
+ * @version     ColDataUtil 1.0
  * @author      Syed Ahmad Raza (git@ahmads.org)
+ * @copyright   GPLv3+: GNU Public License version 3 or later
  *
+ * @file        colData.h
  * @brief       Handle the column data; read it from the files and store it
  *              correctly.
  */

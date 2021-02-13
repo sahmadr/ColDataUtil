@@ -140,6 +140,11 @@ OPTIONS
                 input filename, the COLUMNNUMBER and the BEGINROW and ENDROW but
                 another filename may be given using o=FILENAME.
 
+                NOTE: To calculate FFT, this program uses the popular FFTW
+                library by Matteo Frigo and Steven G. Johnson. Reference:
+                Matteo Frigo and Steven G. Johnson, “The design and
+                implementation of FFTW3,” Proc. IEEE 93 (2), 216–231 (2005).
+
         -o, --output [FILENAME]
                 specify the FILENAME of the output file; if the option -o or
                 --output is specified but a FILENAME is not given, by default,

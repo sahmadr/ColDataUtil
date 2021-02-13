@@ -1,11 +1,9 @@
 /**
- * @file        colData.cpp
- *
- * @project     ColDataUtil
- * @version     0.4
- *
+ * @version     ColDataUtil 1.0
  * @author      Syed Ahmad Raza (git@ahmads.org)
+ * @copyright   GPLv3+: GNU Public License version 3 or later
  *
+ * @file        colData.cpp
  * @brief       Handle the column data; read it from the files and store it
  *              correctly.
  */
@@ -179,7 +177,6 @@ tuple<int, size_t, size_t> DoubleV::findCycles(const size_t rowBgn,
     if (!foundInitial) {
         throw runtime_error(errorDataInvalid);
     }
-    cout << "crossings = " << crossings << '\n';
 
     r = rowInitial;
     while (r<=rowLast) {
@@ -230,7 +227,6 @@ tuple<int, size_t, size_t> DoubleV::findCyclesFirst(const size_t rowBgn,
     if (!foundInitial) {
         throw runtime_error(errorDataInvalid);
     }
-    cout << "crossings = " << crossings << '\n';
 
     r = rowInitial;
     while (r<=rowLast && cycleCount<cycles) {
@@ -286,7 +282,6 @@ tuple<int, size_t, size_t> DoubleV::findCyclesLast(const size_t rowBgn,
     if (!foundFinal) {
         throw runtime_error(errorDataInvalid);
     }
-    cout << "crossings = " << crossings << '\n';
 
     r = rowFinal;
     while (r>=rowFirst && cycleCount<cycles) {

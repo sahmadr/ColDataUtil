@@ -1,13 +1,10 @@
 /**
- * @file        cmdArgs.h
- *
- * @project     ColDataUtil
- * @version     0.4
- *
+ * @version     ColDataUtil 1.0
  * @author      Syed Ahmad Raza (git@ahmads.org)
+ * @copyright   GPLv3+: GNU Public License version 3 or later
  *
+ * @file        cmdArgs.h
  * @brief       Read command line input options.
- *
  */
 
 #ifndef CMDARGS_H
@@ -405,6 +402,9 @@ class CmdArgs::Version {
         m_copyright   {"Copyright (C) 2020"},
         m_author      {"Syed Ahmad Raza"},
         m_email       {"git@ahmads.org"},
+        m_license     {"This is free software: you are free to change and "
+                       "redistribute it.\nThere is NO WARRANTY, to the extent "
+                       "permitted by law; see the source."},
         m_msg;
 
     Version(const Version&) = delete;

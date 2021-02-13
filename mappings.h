@@ -1,13 +1,10 @@
 /**
- * @file        mappings.h
- *
- * @project     ColDataUtil
- * @version     0.4
- *
+ * @version     ColDataUtil 1.0
  * @author      Syed Ahmad Raza (git@ahmads.org)
+ * @copyright   GPLv3+: GNU Public License version 3 or later
  *
+ * @file        mappings.h
  * @brief       All the maps.
- *
  */
 
 #ifndef MAPPINGS_H

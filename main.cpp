@@ -1,11 +1,9 @@
 /**
- * @file        main.cpp
- *
- * @project     ColDataUtil
- * @version     0.4
- *
+ * @version     ColDataUtil 1.0
  * @author      Syed Ahmad Raza (git@ahmads.org)
+ * @copyright   GPLv3+: GNU Public License version 3 or later
  *
+ * @file        main.cpp
  * @brief       A utility program for loading, writing and performing
  *              calculations on column data in comma or space delimited files.
  *              This program has been written primarily for timestep column

@@ -1,13 +1,10 @@
 /**
- * @file        cmdArgs.cpp
- *
- * @project     ColDataUtil
- * @version     0.4
- *
+ * @version     ColDataUtil 1.0
  * @author      Syed Ahmad Raza (git@ahmads.org)
+ * @copyright   GPLv3+: GNU Public License version 3 or later
  *
+ * @file        cmdArgs.cpp
  * @brief       Read command line input options.
- *
  */
 
 #include "namespaces.h"
@@ -1079,7 +1076,8 @@ const string& Help::getHelpFileName() const { return m_helpFileName; }
 
 Version::Version() :
   m_msg{m_program + ' ' + m_version + '\n'
-        + m_copyright + ' ' + m_author + " (" + m_email + ")\n\n"} {}
+        + m_copyright + ' ' + m_author + " (" + m_email + ")\n"
+        + m_license + "\n"} {}
 
 const string& Version::getMsg() const { return m_msg; }
 
