@@ -378,7 +378,7 @@ class CmdArgs::FileData {
 class CmdArgs::Help {
   private:
     const string
-        m_helpFileName {"README.md"};
+        m_helpFileName {"/opt/ColDataUtil/README.md"};
 
     Help(const Help&) = delete;
     Help& operator=(const Help&) = delete;

@@ -44,3 +44,8 @@ int main(int argc, char* argv[]) {
     }
     return 0;
 }
+
+/*
+ * Compilation:
+g++ -std=c++17 -Wpedantic -Wall -Wextra -pipe -O3 -funroll-loops output.cpp cmdArgs.cpp colData.cpp main.cpp libfftw3.a -o coldatautil
+ */

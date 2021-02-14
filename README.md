@@ -66,7 +66,7 @@ OPTIONS
                 7.  Cubic mean: cubic, cubic-mean, cubic-avg
 
         -y, --cycle COLUMNNAME [c=COLUMN(NUMBER or NAME)]
-                    [r=BEGINROW ENDROW] [t=BEGINTIMESTEP ENDTIMESTEP]
+                    [r=BEGINROW r=ENDROW] [t=BEGINTIMESTEP t=ENDTIMESTEP]
                     [f/l/first/last] [NUMBEROFCYCLES] [m=MEAN]
                 command to count the number of cycles in the given file;
                 the name of the column to be used for counting cycles must be
@@ -75,8 +75,8 @@ OPTIONS
                 using c=COLUMNNUMBER (using zero-based indexing);
                 other options are described below:
 
-                r=BEGINROW ENDROW: by default, all of the data is traversed from
-                        start to finish to find the total number of cycles.
+                r=BEGINROW r=ENDROW: by default, all of the data is traversed
+                        from start to finish to find the total number of cycles.
                         However, the BEGINROW and ENDROW may be specified to
                         count the number of cycles within this range of data. If
                         a number of cycles is specified, then only one
@@ -86,7 +86,7 @@ OPTIONS
                         may be specified along with the number of cycles and
                         r=ROW to fix the ENDROW and count the number of cycles
                         from the beginning to ENDROW.
-                t=BEGINTIMESTEP ENDTIMESTEP: by default, all of the data is
+                t=BEGINTIMESTEP t=ENDTIMESTEP: by default, all of the data is
                         traversed from start to finish to find the total number
                         of cycles. However, the BEGINTIMESTEP and ENDTIMESTEP
                         may be specified to count the number of cycles within
@@ -111,18 +111,19 @@ OPTIONS
                         specified using r= or t=).
                 NUMBEROFCYCLES: by default, the given range is traversed from
                         start to finish to find the total number of cycles. If
-                        NUMBEROFCYCLES is specified without specifying any of
-                        f/l/first/last, then "last" is assumed and the given
-                        number of cycles are counted from the end of the given
-                        range of data (or the whole data column if no range is
-                        specified using r= or t=). Otherwise, one of f/l/first/
-                        last may be specified along with the NUMBEROFCYCLES. In
-                        either case, the given NUMBEROFCYCLES is searched for
-                        and the data range is output to the screen by specifying
-                        the range of rows (and timesteps, if a correctly
-                        formatted timestep column is available). All the
-                        calculations (if specified) and the FFT is determined
-                        (if specified) for the identified range of data.
+                        NUMBEROFCYCLES (an integer number) is specified without
+                        specifying any of f/l/first/last, then "last" is assumed
+                        and the given number of cycles are counted from the end
+                        of the given range of data (or the whole data column if
+                        no range is specified using r= or t=). Otherwise, one of
+                        f/l/first/last may be specified along with the
+                        NUMBEROFCYCLES. In either case, the given NUMBEROFCYCLES
+                        is searched for and the data range is output to the
+                        screen by specifying the range of rows (and timesteps,
+                        if a correctly formatted timestep column is available).
+                        All the calculations (if specified) and the FFT is
+                        determined (if specified) for the identified range of
+                        data.
                 m=MEAN: by default, the cycles are counted assuming a mean
                         position of zero. However, another mean position can be
                         stated using this option.

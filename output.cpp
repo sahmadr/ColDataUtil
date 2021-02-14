@@ -18,7 +18,7 @@
 void Output::output(CmdArgs::Args* argsP) {
     if (argsP->getHelpP()) {
         ifstream hF(argsP->getHelpP()->getHelpFileName());
-        if (hF.is_open()) { cout << hF.rdbuf(); }
+        if (hF.is_open()) { cout << hF.rdbuf() << endl; }
         return;
     }
     if (argsP->getVersionP()) {
@@ -88,6 +88,7 @@ void Output::output(CmdArgs::Args* argsP) {
         cout<< "\nThe output has been written to \""
             << argsP->getFileDataP()->getFileDataName() << "\"" << endl;
     }
+    cout<<endl;
 }
 
 //----------------------------------------------------------------------------//
@@ -255,7 +256,7 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
  * File the results of Fast Fourier Transform.
  */
 #include <complex>
-#include <fftw3.h>
+#include "fftw3.h"
 
 void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
     const size_t
@@ -302,7 +303,7 @@ void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
             << '\n';
         // double outputLenInv{1.0/(signalLen/2)};  // Matches with Teclplot
         for (size_t r=0; r<outputLen; ++r) {
-            fftMag[r] = 2.*std::abs(fftData[r])*signalLenInv;
+            fftMag.emplace_back(2.*std::abs(fftData[r])*signalLenInv);
             fOut<< static_cast<double>(r)*outputLenInv*100. << ','
                 << fftMag[r] << ','
                 << std::arg(fftData[r]) << ','
@@ -312,33 +313,25 @@ void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
     }
     else {
         for (size_t r=0; r<outputLen; ++r) {
-            fftMag[r] = 2.*std::abs(fftData[r])*signalLenInv;
+            fftMag.emplace_back(2.*std::abs(fftData[r])*signalLenInv);
         }
     }
 
     // Print partial results
-    cout<< '\n' << "FFT partial results (sorted by magnitude)"
+    cout<< '\n' << " FFT partial results (sorted by magnitude)"
         << '\n' << string(55, '=') << "\n\n "
         << setw(30) << "Frequency"
         << setw(30) << "Magnitude"
         // << setw(30) << "Phase"
         << "\n\n ";
     for (int n=0; n<fftValuesToPrint; ++n) {
-        double maxValue{0.0};
-        size_t maxIndex{0};
-        for (size_t r=0; r<outputLen; ++r) {
-            if (fftMag[r] > maxValue) {
-                maxValue = fftMag[r];
-                maxIndex = r;
-            }
-        }
-        // auto maxValueIt{
-        //     std::max_element(fftMag.begin(), fftMag.end())
-        // };
-        // auto maxIndex{std::distance(fftMag.begin(), maxValueIt)};
+        vector<double>::iterator maxValueIt{
+            std::max_element(fftMag.begin(), fftMag.end())
+        };
+        std::ptrdiff_t maxIndex{std::distance(fftMag.begin(), maxValueIt)};
 
         cout<< setw(30) << static_cast<double>(maxIndex)*outputLenInv*100.
-            << setw(30) << maxValue
+            << setw(30) << *maxValueIt
             // << setw(30) << std::arg(fftData[maxIndex])
             << "\n ";
         fftMag[maxIndex] = 0.0;
