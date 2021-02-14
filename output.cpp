@@ -33,6 +33,10 @@ void Output::output(CmdArgs::Args* argsP) {
         argsP->getTimestepP()->getDataTimestepIVP(),
         argsP->getColumnP()->getDataDoubleVSetP()
     );
+
+    // cout.setf(ios_base::scientific);
+    cout.precision(numeric_limits<double>::max_digits10);
+
     if (argsP->getCycleP() || argsP->getCalcP()) {
         if (!argsP->getFileOutP()) {
             printer(
@@ -64,8 +68,6 @@ void Output::output(CmdArgs::Args* argsP) {
     }
     if (argsP->getFourierP()) {
         fourierFiler(argsP->getFourierP());
-        cout<< "\nThe output has been written to \""
-            << argsP->getFourierP()->getFileFourierName() << "\"" << endl;
     }
     if (argsP->getPrintDataP()) {
         dataPrinter(
@@ -160,17 +162,13 @@ void Output::printer(
             << "\n Center for cycles => "  << cycleP->getCenter()
             << "\n Number of cycles  => "  << cycleP->getCycleCount();
     }
-    cout<< '\n' << string(55, '=') << '\n';
+    cout<< '\n' << string(55, '=') << endl;
 
     if (calcP) {
         if (cycleP && cycleP->getCycleCount()==0) {
             throw logic_error(errorCycleInvalidForCalc);
         }
-        cout.setf(ios_base::scientific);
-        cout.precision(numeric_limits<double>::max_digits10);
-
         for (const int colNo : doubleColSet) {
-
             // Print subheadings
             cout<< "\n " << DoubleV::getOnePFromCol(colNo)->getColName() << '\n'
                 << string(55, '-') << '\n';
@@ -183,8 +181,8 @@ void Output::printer(
                     << " = " << calc(colNo, rBgn, rEnd) << '\n';
             }
         }
+        cout<< '\n' << string(55, '=') << endl;
     }
-    cout << endl;
 }
 
 /*
@@ -266,17 +264,18 @@ void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
         sampleFreq{rowEnd - rowBgn + 1},        // Fs
         signalLen{sampleFreq},                  // L
         outputLen{(signalLen/2)+1};
-
     DoubleV* fourierColDVP{DoubleV::getOnePFromCol(fourierP->getColNo())};
     vector<double> fourierColData{fourierColDVP->getData()};
-    vector<std::complex<double>> fftwData;
-    fftwData.reserve(signalLen);
+    vector<std::complex<double>> fftData;
+    vector<double> fftMag;
+    fftData.reserve(signalLen);
+    fftMag.reserve(outputLen);
 
     fftw_plan plan{
         fftw_plan_dft_1d(
             signalLen,
-            reinterpret_cast<fftw_complex*>(&fftwData.data()[0]),
-            reinterpret_cast<fftw_complex*>(&fftwData.data()[0]),
+            reinterpret_cast<fftw_complex*>(&fftData.data()[0]),
+            reinterpret_cast<fftw_complex*>(&fftData.data()[0]),
             FFTW_FORWARD,
             FFTW_ESTIMATE
         )
@@ -284,31 +283,72 @@ void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
 
     for (size_t r=0; r<signalLen; ++r) {
         using namespace std::complex_literals;
-        fftwData.emplace_back(0i);
-        reinterpret_cast<double(&)[2]>(fftwData[r])[0]
+        fftData.emplace_back(0i);
+        reinterpret_cast<double(&)[2]>(fftData[r])[0]
             = fourierColData[rowBgn+r];
     }
 
     fftw_execute(plan);
 
-    // Output the data
-    ofstream fOut{fourierP->getFileFourierName()};
-    fOut.precision(numeric_limits<double>::max_digits10);
-    fOut<< "Frequency"  << ','
-        << "Magnitude"  << ','
-        << "Phase"      << ','
-        << '\n';
     double signalLenInv{1.0/signalLen};
     double outputLenInv{1.0/outputLen};
-    // double outputLenInv{1.0/(signalLen/2)};  // Matches with Teclplot
-    for (size_t r=0; r<outputLen; ++r) {
-        fOut<< static_cast<double>(r)*outputLenInv*100 << ','
-            << 2*std::abs(fftwData[r])*signalLenInv << ','
-            << std::arg(fftwData[r]) << ','
+    // Output the data
+    if (fourierP->getFileFourierName() != "no.csv") {
+        ofstream fOut{fourierP->getFileFourierName()};
+        fOut.precision(numeric_limits<double>::max_digits10);
+        fOut<< "Frequency"  << ','
+            << "Magnitude"  << ','
+            << "Phase"      << ','
             << '\n';
+        // double outputLenInv{1.0/(signalLen/2)};  // Matches with Teclplot
+        for (size_t r=0; r<outputLen; ++r) {
+            fftMag[r] = 2.*std::abs(fftData[r])*signalLenInv;
+            fOut<< static_cast<double>(r)*outputLenInv*100. << ','
+                << fftMag[r] << ','
+                << std::arg(fftData[r]) << ','
+                << '\n';
+        }
+        fOut.close();
     }
-    // Clean up
-    fOut.close();
+    else {
+        for (size_t r=0; r<outputLen; ++r) {
+            fftMag[r] = 2.*std::abs(fftData[r])*signalLenInv;
+        }
+    }
+
+    // Print partial results
+    cout<< '\n' << "FFT partial results (sorted by magnitude)"
+        << '\n' << string(55, '=') << "\n\n "
+        << setw(30) << "Frequency"
+        << setw(30) << "Magnitude"
+        // << setw(30) << "Phase"
+        << "\n\n ";
+    for (int n=0; n<fftValuesToPrint; ++n) {
+        double maxValue{0.0};
+        size_t maxIndex{0};
+        for (size_t r=0; r<outputLen; ++r) {
+            if (fftMag[r] > maxValue) {
+                maxValue = fftMag[r];
+                maxIndex = r;
+            }
+        }
+        // auto maxValueIt{
+        //     std::max_element(fftMag.begin(), fftMag.end())
+        // };
+        // auto maxIndex{std::distance(fftMag.begin(), maxValueIt)};
+
+        cout<< setw(30) << static_cast<double>(maxIndex)*outputLenInv*100.
+            << setw(30) << maxValue
+            // << setw(30) << std::arg(fftData[maxIndex])
+            << "\n ";
+        fftMag[maxIndex] = 0.0;
+    }
+    cout<< '\n' << string(55, '=') << '\n';
+    if (fourierP->getFileFourierName() != "no.csv") {
+        cout<< "\nThe output has been written to \""
+            << fourierP->getFileFourierName() << "\"" << endl;
+    }
+
     fftw_destroy_plan(plan);
 }
 

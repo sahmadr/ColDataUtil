@@ -127,7 +127,7 @@ OPTIONS
                         position of zero. However, another mean position can be
                         stated using this option.
 
-        -f, --fourier COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o=FILENAME]
+        -f, --fourier COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o=FILENAME/no]
                 command to calculate the Fast Fourier Transform (FFT) of the
                 given range of data in the given file;
                 the name of the column to be used for counting cycles must be
@@ -138,7 +138,8 @@ OPTIONS
                 (see above), then it cannot be specified again;
                 by default, the filename is generated automatically using the
                 input filename, the COLUMNNUMBER and the BEGINROW and ENDROW but
-                another filename may be given using o=FILENAME.
+                another filename may be given using o=FILENAME, or o=no may be
+                passed to suppress the filing of FFT results.
 
                 NOTE: To calculate FFT, this program uses the popular FFTW
                 library by Matteo Frigo and Steven G. Johnson. Reference:

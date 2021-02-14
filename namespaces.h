@@ -46,8 +46,7 @@ enum class Delimitation { undefined, spaced, delimited, spacedAndDelimited };
 //----------------------------------------------------------------------------//
 
 namespace ColData {
-    // inline constexpr int maxRowsToCheckInt = 1000;
-    // inline constexpr int delimiterLenLimit = 3;
+    inline constexpr int fftValuesToPrint = 5;
     class DoubleV;
     class IntV;
     const tuple<Delimitation, int, size_t, IntV*, vector<DoubleV*>&> loadData(
