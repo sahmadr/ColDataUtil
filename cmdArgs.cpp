@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.0
+ * @version     ColDataUtil 1.1
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -430,26 +430,30 @@ void Column::process(const ColData::IntV* dataTimestepIVP) {
     else {
         // Check that it is NOT the timestep column
         if (dataTimestepIVP != nullptr) {
-            bool colExists{0};
             for (int intInput : m_intInputColSet) {
-                colExists = (intInput == dataTimestepIVP->getColNo());
-            }
-            if (!colExists) {
-                for (string& strInput : m_strInputColSet) {
-                    colExists = (strInput == dataTimestepIVP->getColName());
+                if (intInput == dataTimestepIVP->getColNo()) {
+                    throw invalid_argument(errorColIsTimeStep);
                 }
             }
-            if (colExists) { throw invalid_argument(errorColIsTimeStep); }
+            for (string& strInput : m_strInputColSet) {
+                if (strInput == dataTimestepIVP->getColName()) {
+                    throw invalid_argument(errorColIsTimeStep);
+                }
+            }
         }
         // Match the input to the respective column in the given file
         for (ColData::DoubleV* dVP : m_dataDoubleVSetP) {
             bool colExists{0};
             for (int intInput : m_intInputColSet) {
-                colExists = intInput == dVP->getColNo();
+                if (intInput == dVP->getColNo()) {
+                    colExists = true;
+                }
             }
             if (!colExists) {
                 for (string& strInput : m_strInputColSet) {
-                    colExists = strInput == dVP->getColName();
+                    if (strInput == dVP->getColName()) {
+                        colExists = true;
+                    }
                 }
             }
             if (colExists) { m_dataDoubleColSet.push_back(dVP->getColNo()); }

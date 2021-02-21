@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.0
+ * @version     ColDataUtil 1.1
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -96,7 +96,8 @@ errorFourierArgumetInvalid{"An invalid argument has been specified for the FFT "
 errorFourierColNameInvalid{"The column name specified for the FFT option is "
     "invalid."},
 errorFourierColMissing{"The column name for the FFT option is missing."},
-errorInputFile{"Input file could not be opened."},
+errorInputFile{"Input file could not be opened. It may be being used by "
+    "another program."},
 errorOutputFile{"Output file could not be opened."},
 errorUnknown{"Unknown error. Please contact the developer."},
 
