@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.1
+ * @version     ColDataUtil 1.2beta
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -158,13 +158,13 @@ tuple<int, size_t, size_t> DoubleV::findCycles(const size_t rowBgn,
 
     while (r<=rowLast) {
         if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
-                || (m_data[r] == mean)) {
+                || (m_data[r] == mean && m_data[r] != m_data[r+1])) {
             foundInitial = true;
             if (std::abs(m_data[r] - mean) < std::abs(m_data[r+1] - mean)) {
                 rowInitial = r;
                 if ((m_data[r] != mean)
                         || (m_data[r] == mean
-                            && signbit(m_data[r]) != signbit(mean))
+                            && signbit(m_data[r]) != signbit(m_data[r+1]))
                         ) {
                     crossings = -1;
                 }
@@ -183,7 +183,8 @@ tuple<int, size_t, size_t> DoubleV::findCycles(const size_t rowBgn,
     r = rowInitial;
     while (r<=rowLast) {
         if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
-                || (m_data[r+1] == mean)) {
+                || ((r+2 > rowLast) && (crossings > 0)
+                    && (m_data[r+1] == mean))) {
             ++crossings;
             if (crossings == maxCrossings) {
                 ++cycles;
@@ -197,6 +198,7 @@ tuple<int, size_t, size_t> DoubleV::findCycles(const size_t rowBgn,
     }
     return {cycles, rowInitial, rowFinal};
 }
+
 tuple<int, size_t, size_t> DoubleV::findCyclesFirst(const size_t rowBgn,
         const size_t rowEnd, const double mean, const int cycles) const {
     size_t r{rowBgn}, rowInitial{rowBgn}, rowFinal{rowEnd}, rowLast{rowEnd};
@@ -208,13 +210,13 @@ tuple<int, size_t, size_t> DoubleV::findCyclesFirst(const size_t rowBgn,
 
     while (r<=rowLast) {
         if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
-                || (m_data[r] == mean)) {
+                || (m_data[r] == mean && m_data[r] != m_data[r+1])) {
             foundInitial = true;
             if (std::abs(m_data[r] - mean) < std::abs(m_data[r+1] - mean)) {
                 rowInitial = r;
                 if ((m_data[r] != mean)
                         || (m_data[r] == mean
-                            && signbit(m_data[r]) != signbit(mean))
+                            && signbit(m_data[r]) != signbit(m_data[r+1]))
                         ) {
                     crossings = -1;
                 }
@@ -233,7 +235,8 @@ tuple<int, size_t, size_t> DoubleV::findCyclesFirst(const size_t rowBgn,
     r = rowInitial;
     while (r<=rowLast && cycleCount<cycles) {
         if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
-                || (m_data[r+1] == mean)) {
+                || ((r+2 > rowLast) && (crossings > 0)
+                    && (m_data[r+1] == mean))) {
             ++crossings;
             if (crossings == maxCrossings) {
                 ++cycleCount;
@@ -250,6 +253,7 @@ tuple<int, size_t, size_t> DoubleV::findCyclesFirst(const size_t rowBgn,
     }
     return {cycleCount, rowInitial, rowFinal};
 }
+
 tuple<int, size_t, size_t> DoubleV::findCyclesLast(const size_t rowBgn,
         const size_t rowEnd, const double mean, const int cycles) const {
     size_t r{rowEnd}, rowFinal{rowEnd}, rowInitial{rowBgn}, rowFirst{rowBgn};
@@ -258,18 +262,16 @@ tuple<int, size_t, size_t> DoubleV::findCyclesLast(const size_t rowBgn,
 
     if (rowBgn == 0)                { ++rowFirst; }
     if (rowEnd < (m_data.size()-1)) { ++r; }
-    // if (rowBgn>0)                    { --r; }
-    // if (rowEnd == (m_data.size()-1)) { --rowLast; }
 
     while (r>=rowFirst) {
         if ((signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean))
-                || (m_data[r] == mean)) {
+                || (m_data[r] == mean && m_data[r] != m_data[r-1])) {
             foundFinal = true;
             if (std::abs(m_data[r] - mean) < std::abs(m_data[r-1] - mean)) {
                 rowFinal = r;
                 if ((m_data[r] != mean)
                         || (m_data[r] == mean
-                            && signbit(m_data[r]) != signbit(mean))
+                            && signbit(m_data[r]) != signbit(m_data[r-1]))
                         ) {
                     crossings = -1;
                 }
@@ -288,7 +290,8 @@ tuple<int, size_t, size_t> DoubleV::findCyclesLast(const size_t rowBgn,
     r = rowFinal;
     while (r>=rowFirst && cycleCount<cycles) {
         if ((signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean))
-                || (m_data[r-1] == mean)) {
+                || ((r-2 < rowFirst) && (crossings > 0)
+                    && (m_data[r-1] == mean))) {
             ++crossings;
             if (crossings == maxCrossings) {
                 ++cycleCount;
