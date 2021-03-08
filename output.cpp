@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2beta
+ * @version     ColDataUtil 1.2
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -65,9 +65,16 @@ void Output::output(CmdArgs::Args* argsP) {
                     << endl;
             }
         }
+        if (argsP->getCycleP() && !argsP->getCycleP()->getFileName().empty()) {
+            cyclePeaksFiler(argsP->getCycleP(),
+                argsP->getFileInP()->getFileLocation());
+            cout<< "\nThe output has been written to \""
+                << argsP->getCycleP()->getFileName() << "\"" << endl;
+        }
     }
     if (argsP->getFourierP()) {
-        fourierFiler(argsP->getFourierP());
+        fourierCalc(argsP->getFourierP(),
+            argsP->getFileInP()->getFileLocation());
     }
     if (argsP->getPrintDataP()) {
         dataPrinter(
@@ -79,14 +86,14 @@ void Output::output(CmdArgs::Args* argsP) {
     }
     if (argsP->getFileDataP()) {
         dataFiler(
-            argsP->getFileDataP()->getFileDataName(),
+            argsP->getFileDataP()->getFileName(),
             argsP->getFileDataP()->getDelimiter(),
             argsP->getRowP()->getDataRowTotal(),
             argsP->getTimestepP()->getDataTimestepIVP(),
             argsP->getColumnP()->getDataDoubleVSetP()
         );
         cout<< "\nThe output has been written to \""
-            << argsP->getFileDataP()->getFileDataName() << "\"" << endl;
+            << argsP->getFileDataP()->getFileName() << "\"" << endl;
     }
     cout<<endl;
 }
@@ -157,16 +164,36 @@ void Output::printer(
     cout<< "\n Rows              => "
         << to_string(rBgn) << " to " << to_string(rEnd);
     if (cycleP) {
+        ColData::CycleData cData{cycleP->getCalcCycleData()};
         DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getColNo())};
 
-        cout<< "\n Column for cycles => "<< cycleColDVP->getColName()
-            << "\n Center for cycles => "  << cycleP->getCenter()
-            << "\n Number of cycles  => "  << cycleP->getCycleCount();
+        cout<< "\n Column for cycles => " << cycleColDVP->getColName()
+            << "\n Center for cycles => " << cycleP->getCenter()
+            << "\n Number of cycles  => " << cycleP->getInputCount();
+        if (cData.crests.size() > 0 || cData.troughs.size() > 0) {
+            cout<< '\n';
+            if (cData.crests.size() > 0) {
+                cout<< "\n Crests mean       => " << cData.crestsMean;
+            }
+            if (cData.troughs.size() > 0) {
+                cout<< "\n Troughs mean      => " << cData.troughsMean;
+            }
+        }
+        cout<< '\n' << "\n Peaks maximum     => " << cData.peaks[0];
+        if (cData.peaks.size() > 0) {
+            cout<<"\n Peaks mean        => " << cData.peaksMean;
+            if (cData.peaks.size()/3 > 0) {
+                cout<< "\n 1/3rd peaks mean  => " << cData.peaksOneThirdMean;
+                if (cData.peaks.size()/10 > 0) {
+                    cout<< "\n 1/10th peaks mean => "<< cData.peaksOneTenthMean;
+                }
+            }
+        }
     }
     cout<< '\n' << string(55, '=') << endl;
 
     if (calcP) {
-        if (cycleP && cycleP->getCycleCount()==0) {
+        if (cycleP && cycleP->getInputCount()==0) {
             throw logic_error(errorCycleInvalidForCalc);
         }
         for (const int colNo : doubleColSet) {
@@ -207,7 +234,7 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
     if(!fOut) { throw runtime_error(errorOutputFile); }
 
     // File heading
-    fOut<< "\nInput file: " << fileInName
+    fOut<< "Input file: " << fileInName
         << "\nCalculation results";
     if (timestepConsistent) {
         fOut<< "\nTimesteps         => "
@@ -216,16 +243,37 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
     fOut<< "\nRows              => "
         << to_string(rBgn) << " to " << to_string(rEnd);
     if (cycleP) {
+        ColData::CycleData cData{cycleP->getCalcCycleData()};
         DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getColNo())};
 
         fOut<< "\nColumn for cycles => "<< cycleColDVP->getColName()
             << "\nCenter for cycles => "  << cycleP->getCenter()
-            << "\nNumber of cycles  => "  << cycleP->getCycleCount();
+            << "\nNumber of cycles  => "  << cycleP->getInputCount();
+
+        if (cData.crests.size() > 0 || cData.troughs.size() > 0) {
+            fOut<< '\n';
+            if (cData.crests.size() > 0) {
+                fOut<< "\nCrests mean       => " << cData.crestsMean;
+            }
+            if (cData.troughs.size() > 0) {
+                fOut<< "\nTroughs mean      => " << cData.troughsMean;
+            }
+        }
+        fOut<< '\n' << "\nPeaks maximum     => " << cData.peaks[0];
+        if (cData.peaks.size() > 0) {
+            fOut<< "\nPeaks mean        => " << cData.peaksMean;
+            if (cData.peaks.size()/3 > 0) {
+                fOut<< "\n1/3rd peaks mean  => " << cData.peaksOneThirdMean;
+                if (cData.peaks.size()/10 > 0) {
+                    fOut<< "\n1/10th peaks mean => " << cData.peaksOneTenthMean;
+                }
+            }
+        }
     }
     fOut<< '\n' << string(70, '`') << '\n';
 
     if (calcP) {
-        if (cycleP && cycleP->getCycleCount()==0) {
+        if (cycleP && cycleP->getInputCount()==0) {
             throw logic_error(errorCycleInvalidForCalc);
         }
         fOut.setf(ios_base::scientific);
@@ -249,16 +297,41 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
     fOut.close();
 }
 
+void Output::cyclePeaksFiler(const CmdArgs::Cycle* cycleP,
+        const string& fileInName) {
+    ColData::CycleData cData{cycleP->getCalcCycleData()};
+    size_t peaksSize{cData.peaks.size()};
+    size_t crestsAndTroughsSize{cData.crests.size()};
+    ofstream fOut{cycleP->getFileName()};
+
+    fOut.precision(numeric_limits<double>::max_digits10);
+    fOut<< "Input file: " << fileInName
+        << "\nColumn for cycles => "
+        << DoubleV::getOnePFromCol(cycleP->getColNo())->getColName()
+        << "\nCenter for cycles => "  << cycleP->getCenter()
+        << "\nNumber of cycles  => "  << cycleP->getInputCount()
+        << '\n' << string(70, '`')
+        << "\n\n,Peaks (sorted),Crests (unsorted),Troughs (unsorted),\n";
+    for (size_t r=0; r<peaksSize; ++r) {
+        fOut<< ',' << cData.peaks[r] << ',';
+        if (r<crestsAndTroughsSize) {
+            fOut<< cData.crests[r] << ',' << cData.troughs[r] << ',';
+        }
+        fOut<< '\n';
+    }
+    fOut.close();
+}
+
 //----------------------------------------------------------------------------//
 //******************* Filing Fast Fourier Transform results ******************//
 //----------------------------------------------------------------------------//
 /*
  * File the results of Fast Fourier Transform.
  */
-#include <complex>
 #include "fftw3.h"
 
-void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
+void Output::fourierCalc(const CmdArgs::Fourier* fourierP,
+        const string& fileInName) {
     const size_t
         rowBgn{get<0>(fourierP->getRowRange())},
         rowEnd{get<1>(fourierP->getRowRange())},
@@ -293,32 +366,21 @@ void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
 
     double signalLenInv{1.0/signalLen};
     double outputLenInv{1.0/outputLen};
+    // double outputLenInv{1.0/(signalLen/2)};  // Matches with Teclplot
     // Output the data
-    if (fourierP->getFileFourierName() != "no.csv") {
-        ofstream fOut{fourierP->getFileFourierName()};
-        fOut.precision(numeric_limits<double>::max_digits10);
-        fOut<< "Frequency"  << ','
-            << "Magnitude"  << ','
-            << "Phase"      << ','
-            << '\n';
-        // double outputLenInv{1.0/(signalLen/2)};  // Matches with Teclplot
-        for (size_t r=0; r<outputLen; ++r) {
-            fftMag.emplace_back(2.*std::abs(fftData[r])*signalLenInv);
-            fOut<< static_cast<double>(r)*outputLenInv*100. << ','
-                << fftMag[r] << ','
-                << std::arg(fftData[r]) << ','
-                << '\n';
-        }
-        fOut.close();
+    for (size_t r=0; r<outputLen; ++r) {
+        fftMag.emplace_back(2.*std::abs(fftData[r])*signalLenInv);
     }
-    else {
-        for (size_t r=0; r<outputLen; ++r) {
-            fftMag.emplace_back(2.*std::abs(fftData[r])*signalLenInv);
-        }
+    if (!fourierP->getFileName().empty()) {
+        fourierFiler(fourierP->getFileName(), fileInName,
+            DoubleV::getOnePFromCol(fourierP->getColNo())->getColName(),
+            outputLen, outputLenInv, fftData, fftMag);
     }
 
     // Print partial results
-    cout<< '\n' << " FFT partial results (sorted by magnitude)"
+    cout<< '\n' << " FFT partial results (sorted by magnitude)\n"
+        << " Column for FFT => "
+        << DoubleV::getOnePFromCol(fourierP->getColNo())->getColName()
         << '\n' << string(55, '=') << "\n\n "
         << setw(30) << "Frequency"
         << setw(30) << "Magnitude"
@@ -337,14 +399,32 @@ void Output::fourierFiler(const CmdArgs::Fourier* fourierP) {
         fftMag[maxIndex] = 0.0;
     }
     cout<< '\n' << string(55, '=') << '\n';
-    if (fourierP->getFileFourierName() != "no.csv") {
+    if (!fourierP->getFileName().empty()) {
         cout<< "\nThe output has been written to \""
-            << fourierP->getFileFourierName() << "\"" << endl;
+            << fourierP->getFileName() << "\"" << endl;
     }
 
     fftw_destroy_plan(plan);
 }
 
+void Output::fourierFiler(const string& fileOutName, const string& fileInName,
+        const string& colName, const size_t outputLen,
+        const double outputLenInv, const vector<std::complex<double>>& fftData,
+        const vector<double>& fftMag) {
+    ofstream fOut{fileOutName};
+    fOut.precision(numeric_limits<double>::max_digits10);
+    fOut<< "Input file: " << fileInName
+        << "\nColumn for FFT => " << colName << '\n' << string(70, '`')
+        << "\n\n,Frequency,Magnitude,Phase,\n";
+    for (size_t r=0; r<outputLen; ++r) {
+        fOut<<','
+            << static_cast<double>(r)*outputLenInv*100. << ','
+            << fftMag[r] << ','
+            << std::arg(fftData[r]) << ','
+            << '\n';
+    }
+    fOut.close();
+}
 
 //----------------------------------------------------------------------------//
 //********************* Printing and filing loaded data **********************//

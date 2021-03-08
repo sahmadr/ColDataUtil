@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2beta
+ * @version     ColDataUtil 1.2
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -250,16 +250,18 @@ class CmdArgs::Timestep {
 
 class CmdArgs::Cycle {
   private:
-    size_t                  m_cycleArgC{0};
-    vector<string>          m_cycleArgV{};
+    size_t                  m_argC{0};
+    vector<string>          m_argV{};
     CycleInit               m_cycleInit{CycleInit::empty};
-    int                     m_cycleCount{-1};
-    int                     m_cycleColNo{-1};
-    double                  m_cycleCenter{0.0};
-    tuple<bool, bool>       m_cycleRowDefined{false, false};
-    tuple<size_t, size_t>   m_cycleRow{0, 0};
-    tuple<bool, bool>       m_cycleTimestepDefined{false, false};
-    tuple<size_t, size_t>   m_cycleTimestep{0, 0};
+    int                     m_cycleInputCount{-1};
+    int                     m_colNo{-1};
+    double                  m_center{0.0};
+    tuple<bool, bool>       m_rowDefined{false, false};
+    tuple<size_t, size_t>   m_rowRange{0, 0};
+    tuple<bool, bool>       m_timestepDefined{false, false};
+    tuple<size_t, size_t>   m_timestepRange{0, 0};
+    string                  m_fileName{""};
+    ColData::CycleData      m_calcCycleData{};
 
     Cycle(const Cycle&) = delete;
     Cycle& operator=(const Cycle&) = delete;
@@ -270,19 +272,21 @@ class CmdArgs::Cycle {
 
     void init(int c, int argC, const vector<string>& argV);
 
-    void process(const vector<ColData::DoubleV*>& dataDoubleVSetP);
+    void process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
+        const string& fileInName);
 
-    void setCycleCount(int cycles);
+    void setCalcCDataAndCycleInputCount(ColData::CycleData);
 
-    int getCycleCount() const;
+    int getInputCount() const;
     CycleInit getInitType() const;
-    int getCount() const;
     int getColNo() const;
     double getCenter() const;
     const tuple<size_t, size_t> getRowDefRange() const;
     const tuple<size_t, size_t> getTimestepDefRange() const;
     const tuple<bool, bool> getRowDefStatus() const;
     const tuple<bool, bool> getTimestepDefStatus() const;
+    const string& getFileName() const;
+    const ColData::CycleData& getCalcCycleData() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -291,11 +295,11 @@ class CmdArgs::Cycle {
 
 class CmdArgs::Fourier {
   private:
-    size_t                  m_fourierArgC{0};
-    vector<string>          m_fourierArgV{};
+    size_t                  m_argC{0};
+    vector<string>          m_argV{};
     int                     m_colNo{-1};
     tuple<size_t, size_t>   m_rowRange{0, 0};
-    string                  m_fileFourierName{""};
+    string                  m_fileName{""};
 
     Fourier() = delete;
     Fourier(const Fourier&) = delete;
@@ -312,7 +316,7 @@ class CmdArgs::Fourier {
 
     int getColNo() const;
     const tuple<size_t, size_t> getRowRange() const;
-    const string& getFileFourierName() const;
+    const string& getFileName() const;
 };
 
 //----------------------------------------------------------------------------//
@@ -367,7 +371,7 @@ class CmdArgs::FileData {
   public:
     explicit FileData(int c, int argC, const vector<string>& argV);
     void process(const string& fileInName);
-    const string& getFileDataName() const;
+    const string& getFileName() const;
     const string& getDelimiter() const;
 };
 
@@ -398,7 +402,7 @@ class CmdArgs::Version {
   private:
     const string
         m_program     {"ColDataUtil"},
-        m_version     {"1.2beta"},
+        m_version     {"1.2"},
         m_copyright   {"Copyright (C) 2020"},
         m_author      {"Syed Ahmad Raza"},
         m_email       {"git@ahmads.org"},

@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2beta
+ * @version     ColDataUtil 1.2
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -17,24 +17,25 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include <array>
+#include <complex>
 #include <tuple>
 #include <set>
 #include <limits>
 #include <algorithm>
+#include <numeric>
 #include <iterator>
 #include <cstddef>
 #include <cmath>
 
-using   std::array,
-        std::string, std::vector, std::set, std::tuple, std::unordered_map,
+using   std::string, std::vector, std::set, std::tuple, std::unordered_map,
         std::numeric_limits, std::tie, std::get, std::ios_base, std::to_string,
         std::cout, std::endl, std::flush, std::setw, std::left, std::right,
         std::istringstream, std::ostringstream,
         std::stoi, std::stod, std::signbit,
         std::all_of, std::any_of, std::remove_if,
         std::ifstream, std::ofstream, std::getline, std::streampos,
-        std::invalid_argument, std::logic_error, std::runtime_error;
+        std::invalid_argument, std::logic_error, std::runtime_error,
+        std::accumulate;
 
 using stringV = std::string_view;
 using calcType = double(*)(int, size_t, size_t);
@@ -47,6 +48,17 @@ enum class Delimitation { undefined, spaced, delimited, spacedAndDelimited };
 
 namespace ColData {
     inline constexpr int fftValuesToPrint = 5;
+    struct CycleData {
+        int cycleCount;
+        size_t rowInitial;
+        size_t rowFinal;
+        double
+            crestsMean, troughsMean,
+            peaksMean, peaksOneThirdMean, peaksOneTenthMean;
+        vector<double> crests, troughs, peaks;
+    };
+    CycleData calculateCycleData(const vector<double>& crests,
+        const vector<double>& troughs, vector<double>& peaks);
     class DoubleV;
     class IntV;
     const tuple<Delimitation, int, size_t, IntV*, vector<DoubleV*>&> loadData(
@@ -148,7 +160,14 @@ namespace Output {
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet,
         const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP);
-    void fourierFiler(const CmdArgs::Fourier* fourierP);
+    void cyclePeaksFiler(const CmdArgs::Cycle* cycleP,
+        const string& fileInName);
+    void fourierCalc(const CmdArgs::Fourier* fourierP,
+        const string& fileInName);
+    void fourierFiler(const string& fileOutName, const string& fileInName,
+        const string& colName, const size_t outputLen,
+        const double outputLenInv, const vector<std::complex<double>>& fftData,
+        const vector<double>& fftMag);
     void dataPrinter(const string& dlm, const size_t dataRowTotal,
         const ColData::IntV* dataTimestepIVP,
         const vector<ColData::DoubleV*> dataDoubleVSetP);

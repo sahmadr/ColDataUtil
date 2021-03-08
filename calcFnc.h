@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2beta
+ * @version     ColDataUtil 1.2
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *

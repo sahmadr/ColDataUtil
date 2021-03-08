@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2beta
+ * @version     ColDataUtil 1.2
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -99,6 +99,8 @@ errorFourierColMissing{"The column name for the FFT option is missing."},
 errorInputFile{"Input file could not be opened. It may be being used by "
     "another program."},
 errorOutputFile{"Output file could not be opened."},
+errorOutputFileNameEmpty{"An output file has been requested but the output "
+    "file name is empty."},
 errorUnknown{"Unknown error. Please contact the developer."},
 
 generalErrorMessage{"\n\tPlease use the option -h or --help for additional "

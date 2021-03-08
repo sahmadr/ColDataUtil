@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2beta
+ * @version     ColDataUtil 1.2
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -15,6 +15,46 @@
 #include "errorMsgs.h"
 
 using namespace ColData;
+
+CycleData ColData::calculateCycleData(const vector<double>& crests,
+        const vector<double>& troughs, vector<double>& peaks) {
+    size_t  peaksOneThirdSize{static_cast<size_t>(peaks.size()/3)},
+            peaksOneTenthSize{static_cast<size_t>(peaks.size()/10)};
+    double  crestsMean{0.0}, troughsMean{0.0},
+            peaksOneThirdMean{0.0}, peaksOneTenthMean{0.0}, peaksMean{0.0};
+
+    std::sort(peaks.begin(), peaks.end(), std::greater<double>());
+    if (crests.size() > 0) {
+        crestsMean = accumulate(crests.cbegin(), crests.cend(), 0.0)
+                        /static_cast<double>(crests.size());
+    }
+    if (troughs.size() > 0) {
+        troughsMean = accumulate(troughs.cbegin(), troughs.cend(), 0.0)
+                        /static_cast<double>(troughs.size());
+    }
+    if (peaksOneThirdSize > 0) {
+        peaksOneThirdMean =
+            accumulate(peaks.cbegin(), peaks.cbegin() + peaksOneThirdSize, 0.0)
+                /static_cast<double>(peaksOneThirdSize);
+    }
+    if (peaksOneTenthSize > 0) {
+        peaksOneTenthMean =
+            accumulate(peaks.cbegin(), peaks.cbegin() + peaksOneTenthSize, 0.0)
+                /static_cast<double>(peaksOneTenthSize);
+    }
+    if (peaks.size() > 0) {
+        peaksMean = accumulate(peaks.cbegin(), peaks.cend(), 0.0)
+                    /static_cast<double>(peaks.size());
+    }
+
+    CycleData cycleData{
+        0, 0, 0,
+        crestsMean, troughsMean,
+        peaksMean, peaksOneThirdMean, peaksOneTenthMean,
+        crests, troughs, peaks
+    };
+    return cycleData;
+}
 
 //----------------------------------------------------------------------------//
 //*************************** ColData::IntV Class ****************************//
@@ -147,11 +187,13 @@ double DoubleV::getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const {
 }
 
 // Cycles --------------------------------------------------------------------//
-tuple<int, size_t, size_t> DoubleV::findCycles(const size_t rowBgn,
+CycleData DoubleV::findCycles(const size_t rowBgn,
         const size_t rowEnd, const double mean) const {
     size_t r{rowBgn}, rowInitial{rowBgn}, rowFinal{rowEnd}, rowLast{rowEnd};
     bool foundInitial{false};
-    int cycles{0}, crossings{0}, maxCrossings{2};
+    int cycleCount{0}, crossings{0}, maxCrossings{2};
+    double cycleMax{mean}, cycleMin{mean};
+    vector<double> crests, troughs, peaks;
 
     if (rowBgn>0)                    { --r; }
     if (rowEnd == (m_data.size()-1)) { --rowLast; }
@@ -187,23 +229,38 @@ tuple<int, size_t, size_t> DoubleV::findCycles(const size_t rowBgn,
                     && (m_data[r+1] == mean))) {
             ++crossings;
             if (crossings == maxCrossings) {
-                ++cycles;
+                ++cycleCount;
+                crests.push_back(cycleMax);
+                troughs.push_back(cycleMin);
+                peaks.push_back(std::abs(cycleMax - mean));
+                peaks.push_back(std::abs(cycleMin - mean));
+                cycleMax = cycleMin = mean;
                 crossings = 0;
                 rowFinal =
                     (std::abs(m_data[r] - mean)<std::abs(m_data[r+1] - mean)) ?
-                    r : (r+1);
+                        r : (r+1);
             }
         }
+        cycleMin = (m_data[r] < cycleMin) ? m_data[r] : cycleMin;
+        cycleMax = (m_data[r] > cycleMax) ? m_data[r] : cycleMax;
         ++r;
     }
-    return {cycles, rowInitial, rowFinal};
+
+    CycleData cData{calculateCycleData(crests, troughs, peaks)};
+    cData.cycleCount = cycleCount;
+    cData.rowInitial = rowInitial;
+    cData.rowFinal = rowFinal;
+
+    return cData;
 }
 
-tuple<int, size_t, size_t> DoubleV::findCyclesFirst(const size_t rowBgn,
+CycleData DoubleV::findCyclesFirst(const size_t rowBgn,
         const size_t rowEnd, const double mean, const int cycles) const {
     size_t r{rowBgn}, rowInitial{rowBgn}, rowFinal{rowEnd}, rowLast{rowEnd};
     bool foundInitial{false};
     int cycleCount{0}, crossings{0}, maxCrossings{2};
+    double cycleMax{mean}, cycleMin{mean};
+    vector<double> crests, troughs, peaks;
 
     if (rowBgn>0)                    { --r; }
     if (rowEnd == (m_data.size()-1)) { --rowLast; }
@@ -240,25 +297,40 @@ tuple<int, size_t, size_t> DoubleV::findCyclesFirst(const size_t rowBgn,
             ++crossings;
             if (crossings == maxCrossings) {
                 ++cycleCount;
+                crests.push_back(cycleMax);
+                troughs.push_back(cycleMin);
+                peaks.push_back(std::abs(cycleMax - mean));
+                peaks.push_back(std::abs(cycleMin - mean));
+                cycleMax = cycleMin = mean;
                 crossings = 0;
                 rowFinal =
                     (std::abs(m_data[r] - mean)<std::abs(m_data[r+1] - mean)) ?
-                    r : (r+1);
+                        r : (r+1);
             }
         }
+        cycleMin = (m_data[r] < cycleMin) ? m_data[r] : cycleMin;
+        cycleMax = (m_data[r] > cycleMax) ? m_data[r] : cycleMax;
         ++r;
     }
     if (cycleCount != cycles) {
         throw invalid_argument(errorCycleNotAvailable);
     }
-    return {cycleCount, rowInitial, rowFinal};
+
+    CycleData cData{calculateCycleData(crests, troughs, peaks)};
+    cData.cycleCount = cycleCount;
+    cData.rowInitial = rowInitial;
+    cData.rowFinal = rowFinal;
+
+    return cData;
 }
 
-tuple<int, size_t, size_t> DoubleV::findCyclesLast(const size_t rowBgn,
+CycleData DoubleV::findCyclesLast(const size_t rowBgn,
         const size_t rowEnd, const double mean, const int cycles) const {
     size_t r{rowEnd}, rowFinal{rowEnd}, rowInitial{rowBgn}, rowFirst{rowBgn};
     bool foundFinal{false};
     int cycleCount{0}, crossings{0}, maxCrossings{2};
+    double cycleMax{mean}, cycleMin{mean};
+    vector<double> crests, troughs, peaks;
 
     if (rowBgn == 0)                { ++rowFirst; }
     if (rowEnd < (m_data.size()-1)) { ++r; }
@@ -295,18 +367,31 @@ tuple<int, size_t, size_t> DoubleV::findCyclesLast(const size_t rowBgn,
             ++crossings;
             if (crossings == maxCrossings) {
                 ++cycleCount;
+                crests.push_back(cycleMax);
+                troughs.push_back(cycleMin);
+                peaks.push_back(std::abs(cycleMax - mean));
+                peaks.push_back(std::abs(cycleMin - mean));
+                cycleMax = cycleMin = mean;
                 crossings = 0;
                 rowInitial =
                     (std::abs(m_data[r] - mean)<std::abs(m_data[r-1] - mean)) ?
-                    r : (r-1);
+                        r : (r-1);
             }
         }
+        cycleMin = (m_data[r] < cycleMin) ? m_data[r] : cycleMin;
+        cycleMax = (m_data[r] > cycleMax) ? m_data[r] : cycleMax;
         --r;
     }
     if (cycleCount != cycles) {
         throw invalid_argument(errorCycleNotAvailable);
     }
-    return {cycleCount, rowInitial, rowFinal};
+
+    CycleData cData{calculateCycleData(crests, troughs, peaks)};
+    cData.cycleCount = cycleCount;
+    cData.rowInitial = rowInitial;
+    cData.rowFinal = rowFinal;
+
+    return cData;
 }
 
 //----------------------------------------------------------------------------//

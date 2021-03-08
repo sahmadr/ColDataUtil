@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2beta
+ * @version     ColDataUtil 1.2
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -47,5 +47,5 @@ int main(int argc, char* argv[]) {
 
 /*
  * Compilation:
-g++ -std=c++17 -Wpedantic -Wall -Wextra -pipe -O3 -funroll-loops output.cpp cmdArgs.cpp colData.cpp main.cpp libfftw3.a -o coldatautil
+g++ -std=c++17 -Wpedantic -Wall -Wextra -O3 output.cpp cmdArgs.cpp colData.cpp main.cpp libfftw3.a -o coldatautil
  */

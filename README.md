@@ -65,15 +65,39 @@ OPTIONS
                 6.  Quadratic mean (RMS): rms, quadratic, quadratic-mean
                 7.  Cubic mean: cubic, cubic-mean, cubic-avg
 
-        -y, --cycle COLUMNNAME [c=COLUMN(NUMBER or NAME)]
+        -y, --cycle COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o/o=FILENAME]
                     [r=BEGINROW r=ENDROW] [t=BEGINTIMESTEP t=ENDTIMESTEP]
-                    [f/l/first/last] [NUMBEROFCYCLES] [m=MEAN]
-                command to count the number of cycles in the given file;
+                    [f/l/first/last] [NUMBEROFCYCLES] [m=CENTER]
+                command to count the number of cycles in the given file and
+                find the peaks of each cycle using its crest and trough, which
+                is then used to calculate the maximum peak and the various
+                mean values (described below);
                 the name of the column to be used for counting cycles must be
                 given, either stated directly after the option or given using
                 c=COLUMNNAME, or alternatively, the column number may be given
                 using c=COLUMNNUMBER (using zero-based indexing);
-                other options are described below:
+                by default, the filing of the crest, trough and peak values is
+                suppressed but this behavior may be changed by passing "o" as a
+                parameter after specifying -y or --cycle, which automatically
+                generates the file using the input filename, the COLUMNNUMBER
+                and the BEGINROW and ENDROW, or another filename may be given
+                using o=FILENAME;
+                the various types of mean values calculated are listed below,
+                followed by the other possible options:
+
+                1. Crests mean: is the mean of all the crests in the given
+                        range.
+                2. Troughs mean: is the mean of all the troughs in the given
+                        range.
+                3. Peaks mean: is the maximum of all the peaks, where a peak is
+                        calculated by subtracting the mean from each crest or
+                        trough and taking its absolute value
+                4. Peaks mean: is the mean of all the peaks.
+                5. 1/3rd peaks mean: is the mean of the highest 1/3rd of the
+                        peaks, similar to the significant wave height (SWH) used
+                        in physical oceanography.
+                6. 1/10th peaks mean: is the mean of the highest 1/10th of the
+                        peaks.
 
                 r=BEGINROW r=ENDROW: by default, all of the data is traversed
                         from start to finish to find the total number of cycles.
@@ -124,11 +148,11 @@ OPTIONS
                         All the calculations (if specified) and the FFT is
                         determined (if specified) for the identified range of
                         data.
-                m=MEAN: by default, the cycles are counted assuming a mean
-                        position of zero. However, another mean position can be
-                        stated using this option.
+                m=CENTER: by default, the cycles are counted assuming a center
+                        or mean position of zero. However, another center or
+                        mean position can be input using this option.
 
-        -f, --fourier COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o=FILENAME/no]
+        -f, --fourier COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o/o=FILENAME]
                 command to calculate the Fast Fourier Transform (FFT) of the
                 given range of data in the given file;
                 the name of the column to be used for counting cycles must be
@@ -137,10 +161,11 @@ OPTIONS
                 using c=COLUMNNUMBER (using zero-based indexing); however, if
                 the COLUMNNAME has already been specified for the Cycle option
                 (see above), then it cannot be specified again;
-                by default, the filename is generated automatically using the
-                input filename, the COLUMNNUMBER and the BEGINROW and ENDROW but
-                another filename may be given using o=FILENAME, or o=no may be
-                passed to suppress the filing of FFT results.
+                by default, the filing of complete FFT results is suppressed but
+                this behavior may be changed by passing "o" as a parameter after
+                specifying -f or --fourier, which automatically generates the
+                file using the input filename, the COLUMNNUMBER and the BEGINROW
+                and ENDROW, or another filename may be given using o=FILENAME.
 
                 NOTE: To calculate FFT, this program uses the popular FFTW
                 library by Matteo Frigo and Steven G. Johnson. Reference:
@@ -148,9 +173,10 @@ OPTIONS
                 implementation of FFTW3,” Proc. IEEE 93 (2), 216–231 (2005).
 
         -o, --output [FILENAME]
-                specify the FILENAME of the output file; if the option -o or
-                --output is specified but a FILENAME is not given, by default,
-                the FILENAME is generated automatically using the input filename
+                specify the FILENAME of the output file for calculation results;
+                if the option -o or --output is specified but a FILENAME is not
+                given, by default, the FILENAME is generated automatically using
+                the input filename
 
         --print-data [DELIMITER]
                 command to print the given input data range to the screen; a

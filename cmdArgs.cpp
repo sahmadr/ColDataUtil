@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2beta
+ * @version     ColDataUtil 1.2
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -175,7 +175,8 @@ void Args::process() {
     // After loading file ----------------------------------------------------//
     // Mandatory argument members
     if (m_cycleP) {
-        m_cycleP->process(m_columnP->getDataDoubleVSetP());
+        m_cycleP->process(m_columnP->getDataDoubleVSetP(),
+            m_fileInP->getFileLocation());
         m_rowP->process(
             get<0>(m_cycleP->getRowDefStatus()),
             get<1>(m_cycleP->getRowDefStatus()),
@@ -198,40 +199,38 @@ void Args::process() {
     resolveRowVsTimestep();
     if (m_cycleP) {
         DoubleV* cycleColDVP{DoubleV::getOnePFromCol(m_cycleP->getColNo())};
-        int cycles{0};
-        double rowInitial{0}, rowFinal{0};
 
         if (m_cycleP->getInitType() == CmdArgs::CycleInit::full) {
-            tie(cycles, rowInitial, rowFinal) =
+            m_cycleP->setCalcCDataAndCycleInputCount(
                 cycleColDVP->findCycles(m_rowP->getRowBgn(),
-                    m_rowP->getRowEnd(), m_cycleP->getCenter());
-            m_cycleP->setCycleCount(cycles);
+                    m_rowP->getRowEnd(), m_cycleP->getCenter())
+            );
         }
         else if (m_cycleP->getInitType() == CmdArgs::CycleInit::first) {
-            tie(cycles, rowInitial, rowFinal) =
+            m_cycleP->setCalcCDataAndCycleInputCount(
                 cycleColDVP->findCyclesFirst(m_rowP->getRowBgn(),
                     m_rowP->getRowEnd(), m_cycleP->getCenter(),
-                    m_cycleP->getCount());
-            if (cycles != m_cycleP->getCycleCount()) {
-                m_cycleP->setCycleCount(cycles);
-            }
+                    m_cycleP->getInputCount())
+            );
         }
         else if (m_cycleP->getInitType() == CmdArgs::CycleInit::last) {
-            tie(cycles, rowInitial, rowFinal) =
+            m_cycleP->setCalcCDataAndCycleInputCount(
                 cycleColDVP->findCyclesLast(m_rowP->getRowBgn(),
                     m_rowP->getRowEnd(), m_cycleP->getCenter(),
-                    m_cycleP->getCount());
-            if (cycles != m_cycleP->getCycleCount()) {
-                m_cycleP->setCycleCount(cycles);
-            }
+                    m_cycleP->getInputCount())
+            );
         }
 
         // Update cycles, rows and timesteps
-        m_rowP->setRowBgn(rowInitial);
-        m_rowP->setRowEnd(rowFinal);
+        m_rowP->setRowBgn(m_cycleP->getCalcCycleData().rowInitial);
+        m_rowP->setRowEnd(m_cycleP->getCalcCycleData().rowFinal);
         if (m_timestepP->isTimestepConsistent()) {
-            m_timestepP->setTimestepBgnFromRow(rowInitial);
-            m_timestepP->setTimestepEndFromRow(rowFinal);
+            m_timestepP->setTimestepBgnFromRow(
+                m_cycleP->getCalcCycleData().rowInitial
+            );
+            m_timestepP->setTimestepEndFromRow(
+                m_cycleP->getCalcCycleData().rowFinal
+            );
         }
     }
     if (m_fourierP) {
@@ -690,18 +689,19 @@ Cycle::Cycle(int c, int argC, const vector<string>& argV) {
     init(c, argC, argV);
 }
 void Cycle::init(int c, int argC, const vector<string>& argV) {
-    while (c+1 < argC && argV[c+1][0] != '-' && m_cycleArgV.size() < 5) {
+    while (c+1 < argC && argV[c+1][0] != '-' && m_argV.size() < 5) {
         Args::setCount(++c);
-        ++m_cycleArgC;
-        m_cycleArgV.push_back(argV[c]);
+        ++m_argC;
+        m_argV.push_back(argV[c]);
     }
 }
-void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP) {
-    for (string cycleArg : m_cycleArgV) {
+void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
+        const string& fileInName) {
+    for (string cycleArg : m_argV) {
         if (all_of(cycleArg.begin(), cycleArg.end(), isdigit)) {
-            if (m_cycleCount<0) {
-                m_cycleCount = stoi(cycleArg);
-                if (m_cycleCount < 0) {
+            if (m_cycleInputCount<0) {
+                m_cycleInputCount = stoi(cycleArg);
+                if (m_cycleInputCount < 0) {
                     throw invalid_argument(errorCycleInvalid);
                 }
             }
@@ -718,62 +718,73 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP) {
                     && mapIt != mapStrToCycleInit.end()) {
                 m_cycleInit = mapIt->second;
             }
-            else if (m_cycleCenter == 0.0
+            else if (m_fileName == ""
+                    && ((pos=cycleArg.find("o=")) != string::npos)) {
+                cycleArg.erase(0, pos+2);
+                if (cycleArg.empty()) {
+                    throw invalid_argument(errorOutputFileNameEmpty);
+                }
+                m_fileName = cycleArg + ".csv";
+            }
+            else if (m_fileName == "" && cycleArg == "o") {
+                m_fileName = "auto";
+            }
+            else if (m_center == 0.0
                     && ((pos=cycleArg.find("m=")) != string::npos)) {
                 cycleArg.erase(0, pos+2);
                 string numStr{"0123456789Ee-+."};
                 if (all_of(cycleArg.begin(), cycleArg.end(), [&](char c) {
                         return (numStr.find(c) != string::npos); })) {
-                    m_cycleCenter = stod(cycleArg);
+                    m_center = stod(cycleArg);
                 }
                 else {
                     throw invalid_argument{errorCycleCenterInvalid};
                 }
             }
-            else if (!get<0>(m_cycleRowDefined)
+            else if (!get<0>(m_rowDefined)
                      && ((pos=cycleArg.find("r=")) != string::npos)) {
                 cycleArg.erase(0, pos+2);
                 if (stoi(cycleArg) < 0){
                     throw invalid_argument(errorRowRangeInvalid);
                 }
-                get<0>(m_cycleRow) = stoi(cycleArg);
-                get<0>(m_cycleRowDefined) = true;
+                get<0>(m_rowRange) = stoi(cycleArg);
+                get<0>(m_rowDefined) = true;
             }
-            else if (!get<1>(m_cycleRowDefined)
+            else if (!get<1>(m_rowDefined)
                      && ((pos=cycleArg.find("r=")) != string::npos)) {
                 cycleArg.erase(0, pos+2);
                 if (stoi(cycleArg) <= 0){
                     throw invalid_argument(errorRowRangeInvalid);
                 }
-                get<1>(m_cycleRow) = stoi(cycleArg);
-                get<1>(m_cycleRowDefined) = true;
+                get<1>(m_rowRange) = stoi(cycleArg);
+                get<1>(m_rowDefined) = true;
             }
-            else if (!get<0>(m_cycleTimestepDefined)
+            else if (!get<0>(m_timestepDefined)
                      && ((pos=cycleArg.find("t=")) != string::npos)) {
                 cycleArg.erase(0, pos+2);
                 if (stoi(cycleArg) < 0) {
                     throw invalid_argument(errorTimestepRangeInvalid);
                 }
-                get<0>(m_cycleTimestep) = stoi(cycleArg);
-                get<0>(m_cycleTimestepDefined) = true;
+                get<0>(m_timestepRange) = stoi(cycleArg);
+                get<0>(m_timestepDefined) = true;
             }
-            else if (!get<1>(m_cycleTimestepDefined)
+            else if (!get<1>(m_timestepDefined)
                      && ((pos=cycleArg.find("t=")) != string::npos)) {
                 cycleArg.erase(0, pos+2);
                 if (stoi(cycleArg) <= 0) {
                     throw invalid_argument(errorTimestepRangeInvalid);
                 }
-                get<1>(m_cycleTimestep) = stoi(cycleArg);
-                get<1>(m_cycleTimestepDefined) = true;
+                get<1>(m_timestepRange) = stoi(cycleArg);
+                get<1>(m_timestepDefined) = true;
             }
-            else if (m_cycleColNo<0) {
+            else if (m_colNo<0) {
                 if ((pos=cycleArg.find("c=")) != string::npos) {
                     cycleArg.erase(0, pos+2);
                     bool colExists{false};
                     if (all_of(cycleArg.begin(), cycleArg.end(), isdigit)) {
-                        m_cycleColNo = stoi(cycleArg);
+                        m_colNo = stoi(cycleArg);
                         for (ColData::DoubleV* dVP : dataDoubleVSetP) {
-                            if (m_cycleColNo == dVP->getColNo()) {
+                            if (m_colNo == dVP->getColNo()) {
                                 colExists = true;
                                 break;
                             }
@@ -782,7 +793,7 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP) {
                     else {
                         for (ColData::DoubleV* dVP : dataDoubleVSetP) {
                             if (cycleArg == dVP->getColName()) {
-                                m_cycleColNo = dVP->getColNo();
+                                m_colNo = dVP->getColNo();
                                 colExists = true;
                                 break;
                             }
@@ -795,11 +806,11 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP) {
                 else {
                     for (ColData::DoubleV* dVP : dataDoubleVSetP) {
                         if (cycleArg == dVP->getColName()) {
-                            m_cycleColNo = dVP->getColNo();
+                            m_colNo = dVP->getColNo();
                             break;
                         }
                     }
-                    if (m_cycleColNo<0) {
+                    if (m_colNo<0) {
                         throw invalid_argument(errorCycleColNameInvalid);
                     }
                 }
@@ -809,65 +820,68 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP) {
             }
         }
     }
-
+    if (m_fileName == "auto") {
+        string fileNameAffix{
+            "_cycles_c" + to_string(m_colNo) + "_r"
+            + to_string(get<0>(m_rowRange)) + "to"
+            + to_string(get<1>(m_rowRange)) + ".csv"
+        };
+        size_t pos;
+        if ((pos = fileInName.find_last_of('.')) != string::npos
+                && (fileInName.size() - pos) < 5) {
+            m_fileName = fileInName.substr(0, pos) + fileNameAffix;
+        }
+        else {
+            m_fileName = fileInName + fileNameAffix;
+        }
+    }
     // Error checking
-    if (m_cycleColNo<0) {
+    if (m_colNo<0) {
         throw logic_error(errorCycleColNameMissing);
     }
-    // if (m_cycleCount<0 &&
-    //         !get<1>(m_cycleRowDefined) && !get<1>(m_cycleTimestepDefined)) {
-    //     throw logic_error(errorCycleTooFewArguments);
-    // }
-    if (m_cycleCount>0 &&
-            (get<1>(m_cycleRowDefined) || get<1>(m_cycleTimestepDefined))) {
+    if (m_cycleInputCount>0 &&
+            (get<1>(m_rowDefined) || get<1>(m_timestepDefined))) {
         throw logic_error(errorCycleTooManyArguments);
     }
-    if (get<0>(m_cycleRowDefined) && get<0>(m_cycleTimestepDefined)) {
+    if (get<0>(m_rowDefined) && get<0>(m_timestepDefined)) {
         throw logic_error(errorCycleWithRowTimestepConflict);
     }
-    if (m_cycleCount<0
+    if (m_cycleInputCount<0
             && (m_cycleInit == CycleInit::first
                 || m_cycleInit == CycleInit::last)) {
         throw logic_error(errorCycleMissing);
     }
     // Automatic assignment of variables
-    if (m_cycleCount<0 && m_cycleInit == CycleInit::empty) {
+    if (m_cycleInputCount<0 && m_cycleInit == CycleInit::empty) {
         m_cycleInit = CycleInit::full;
     }
-    if (m_cycleCount>0 && m_cycleInit == CycleInit::empty) {
+    if (m_cycleInputCount>0 && m_cycleInit == CycleInit::empty) {
         m_cycleInit = CycleInit::last;
     }
-
-    /* cout<< "\n Cycle arguments:\n"
-        << (m_cycleInit==CycleInit::empty ? " CycleInit::empty" :
-            (m_cycleInit==CycleInit::first ? " CycleInit::first" :
-             (m_cycleInit==CycleInit::last ? " CycleInit::last" :
-              " CycleInit::full")))
-        << "\n CycleCount     = " << m_cycleCount
-        << "\n CycleColNo     = " << m_cycleColNo
-        << "\n CycleMean      = " << m_cycleCenter
-        << "\n CycleRow1      = " << get<0>(m_cycleRow)
-        << "\n CycleRow2      = " << get<1>(m_cycleRow)
-        << "\n CycleTimestep1 = " << get<0>(m_cycleTimestep)
-        << "\n CycleTimestep2 = " << get<1>(m_cycleTimestep) << '\n'; */
 }
-void Cycle::setCycleCount(int cycles)   { m_cycleCount = cycles; }
-int Cycle::getCycleCount() const        { return m_cycleCount; }
+void Cycle::setCalcCDataAndCycleInputCount(ColData::CycleData cData) {
+    m_calcCycleData = cData;
+    m_cycleInputCount = cData.cycleCount;
+}
+int Cycle::getInputCount() const        { return m_cycleInputCount; }
 CycleInit Cycle::getInitType() const    { return m_cycleInit; }
-int Cycle::getCount() const             { return m_cycleCount; }
-int Cycle::getColNo() const             { return m_cycleColNo; }
-double Cycle::getCenter() const         { return m_cycleCenter; }
+int Cycle::getColNo() const             { return m_colNo; }
+double Cycle::getCenter() const         { return m_center; }
 const tuple<size_t, size_t> Cycle::getRowDefRange() const {
-    return m_cycleRow;
+    return m_rowRange;
 }
 const tuple<size_t, size_t> Cycle::getTimestepDefRange() const {
-    return m_cycleTimestep;
+    return m_timestepRange;
 }
 const tuple<bool, bool> Cycle::getRowDefStatus() const {
-    return m_cycleRowDefined;
+    return m_rowDefined;
 }
 const tuple<bool, bool> Cycle::getTimestepDefStatus() const {
-    return m_cycleTimestepDefined;
+    return m_timestepDefined;
+}
+const string& Cycle::getFileName() const { return m_fileName; }
+const ColData::CycleData& Cycle::getCalcCycleData() const {
+    return m_calcCycleData;
 }
 
 //----------------------------------------------------------------------------//
@@ -878,10 +892,10 @@ Fourier::Fourier(int c, int argC, const vector<string>& argV) {
     init(c, argC, argV);
 }
 void Fourier::init(int c, int argC, const vector<string>& argV) {
-    while (c+1 < argC && argV[c+1][0] != '-' && m_fourierArgV.size() < 2) {
+    while (c+1 < argC && argV[c+1][0] != '-' && m_argV.size() < 2) {
         Args::setCount(++c);
-        ++m_fourierArgC;
-        m_fourierArgV.push_back(argV[c]);
+        ++m_argC;
+        m_argV.push_back(argV[c]);
     }
 }
 
@@ -895,11 +909,17 @@ void Fourier::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
     get<1>(m_rowRange) = rowEnd;
 
     size_t pos;
-    for (string fourierArg : m_fourierArgV) {
-        if (m_fileFourierName == ""
+    for (string fourierArg : m_argV) {
+        if (m_fileName == ""
                 && ((pos=fourierArg.find("o=")) != string::npos)) {
             fourierArg.erase(0, pos+2);
-            m_fileFourierName = fourierArg + ".csv";
+            if (fourierArg.empty()) {
+                throw invalid_argument(errorOutputFileNameEmpty);
+            }
+            m_fileName = fourierArg + ".csv";
+        }
+        else if (m_fileName == "" && fourierArg == "o") {
+            m_fileName = "auto";
         }
         else if (m_colNo<0 && ((pos=fourierArg.find("c=")) != string::npos)) {
             fourierArg.erase(0, pos+2);
@@ -941,38 +961,26 @@ void Fourier::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
     if (m_colNo<0) {
         throw logic_error(errorFourierColMissing);
     }
-    if (m_fileFourierName == "") {
+    if (m_fileName == "auto") {
         string fileNameAffix{
             "_fft_c" + to_string(m_colNo) + "_r" + to_string(rowBgn) + "to"
             + to_string(rowEnd) + ".csv"
         };
-        size_t posBgn{0};
-        string temp;
-        if (fileInName[0] == '.') {
-            if (fileInName[1] == '.') {
-                posBgn = 2;
-            }
-            else {
-                posBgn = 1;
-            }
-        }
-        temp = fileInName.substr(posBgn, fileInName.length());
-        if ((pos = temp.find_last_of('.')) != string::npos) {
-            m_fileFourierName = fileInName.substr(posBgn, pos+posBgn)
-                                + fileNameAffix;
+        if ((pos = fileInName.find_last_of('.')) != string::npos
+                && (fileInName.size() - pos) < 5) {
+            m_fileName = fileInName.substr(0, pos) + fileNameAffix;
         }
         else {
-            m_fileFourierName = fileInName + fileNameAffix;
+            m_fileName = fileInName + fileNameAffix;
         }
     }
 }
-
 int Fourier::getColNo() const { return m_colNo; }
 const tuple<size_t, size_t> Fourier::getRowRange() const {
     return m_rowRange;
 }
-const string& Fourier::getFileFourierName() const {
-    return m_fileFourierName;
+const string& Fourier::getFileName() const {
+    return m_fileName;
 }
 
 //----------------------------------------------------------------------------//
@@ -991,23 +999,12 @@ void FileOut::init(int c, int argC, const vector<string>& argV) {
 void FileOut::process(const string& fileInName) {
     if (m_fileOutLocSet.empty()) {
         size_t pos;
-        size_t posBgn{0};
         string fileOutName;
-        string temp;
         string fileNameAffix{"_calc.csv"};
 
-        if (fileInName[0] == '.') {
-            if (fileInName[1] == '.') {
-                posBgn = 2;
-            }
-            else {
-                posBgn = 1;
-            }
-        }
-        temp = fileInName.substr(posBgn, fileInName.length());
-        if ((pos = temp.find_last_of('.')) != string::npos) {
-            fileOutName = fileInName.substr(posBgn, pos+posBgn)
-                            + fileNameAffix;
+        if ((pos = fileInName.find_last_of('.')) != string::npos
+                && (fileInName.size() - pos) < 5) {
+            fileOutName = fileInName.substr(0, pos) + fileNameAffix;
         }
         else {
             fileOutName = fileInName + fileNameAffix;
@@ -1041,29 +1038,18 @@ FileData::FileData(int c, int argC, const vector<string>& argV) {
 }
 void FileData::process(const string& fileInName) {
     size_t pos;
-    size_t posBgn{0};
     string fileOutName;
-    string temp;
     string fileNameAffix{"_data.csv"};
 
-    if (fileInName[0] == '.') {
-        if (fileInName[1] == '.') {
-            posBgn = 2;
-        }
-        else {
-            posBgn = 1;
-        }
-    }
-    temp = fileInName.substr(posBgn, fileInName.length());
-    if ((pos = temp.find_last_of('.')) != string::npos) {
-        fileOutName = fileInName.substr(posBgn, pos+posBgn)
-                        + fileNameAffix;
+    if ((pos = fileInName.find_last_of('.')) != string::npos
+            && (fileInName.size() - pos) < 5) {
+        fileOutName = fileInName.substr(0, pos) + fileNameAffix;
     }
     else {
         fileOutName = fileInName + fileNameAffix;
     }
 }
-const string& FileData::getFileDataName() const { return m_fileDataName; }
+const string& FileData::getFileName() const { return m_fileDataName; }
 const string& FileData::getDelimiter() const    { return m_delimiter; }
 
 //----------------------------------------------------------------------------//
