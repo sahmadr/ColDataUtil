@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2
+ * @version     ColDataUtil 1.3beta
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -402,7 +402,7 @@ class CmdArgs::Version {
   private:
     const string
         m_program     {"ColDataUtil"},
-        m_version     {"1.2"},
+        m_version     {"1.3beta"},
         m_copyright   {"Copyright (C) 2020"},
         m_author      {"Syed Ahmad Raza"},
         m_email       {"git@ahmads.org"},

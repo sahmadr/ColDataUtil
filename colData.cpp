@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.2
+ * @version     ColDataUtil 1.3beta
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -69,7 +69,7 @@ IntV::IntV(int colNo, string colName, size_t dataRowTotal) :
     m_data.reserve(dataRowTotal);
     s_intVSetP.push_back(this);
 }
-void IntV::addValue(int value)          { m_data.push_back(value); }
+void IntV::addValue(int value)          { m_data.emplace_back(value); }
 void IntV::insertColNoSet(int colNo)    { s_intVColNoSet.insert(colNo); }
 
 int IntV::getId() const                 { return m_id; }
@@ -132,7 +132,7 @@ DoubleV::DoubleV(int colNo, string colName, size_t dataRowTotal) :
     m_data.reserve(dataRowTotal);
     s_doubleVSetP.push_back(this);
 }
-void DoubleV::addValue(double value)          { m_data.push_back(value); }
+void DoubleV::addValue(double value)          { m_data.emplace_back(value); }
 void DoubleV::insertColNoSet(int colNo)       {s_doubleVColNoSet.insert(colNo);}
 
 int DoubleV::getId() const                    { return m_id; }
@@ -552,6 +552,10 @@ tuple<int, vector<string>> ColData::identifyColumnHeaders(string headerLine,
         while (pos != string::npos) {
             string header{headerLine.substr(0, pos=headerLine.find(dlm))};
             if (!all_of(header.cbegin(), header.cend(), isspace)) {
+                header.erase(
+                    std::remove(header.begin(), header.end(), '\"'),
+                    header.end()
+                );
                 colNames.push_back(header);
                 ++dataColTotal;
             }
@@ -562,6 +566,10 @@ tuple<int, vector<string>> ColData::identifyColumnHeaders(string headerLine,
         istringstream headerLineStream{headerLine};
         string header;
         while (headerLineStream >> header) {
+            header.erase(
+                std::remove(header.begin(), header.end(), '\"'),
+                header.end()
+            );
             colNames.push_back(header);
             ++dataColTotal;
         }
