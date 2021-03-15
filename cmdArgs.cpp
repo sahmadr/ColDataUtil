@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.3beta
+ * @version     ColDataUtil 1.3
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -189,7 +189,8 @@ void Args::process() {
             get<1>(m_cycleP->getTimestepDefStatus()),
             get<0>(m_cycleP->getTimestepDefRange()),
             get<1>(m_cycleP->getTimestepDefRange()),
-            m_cycleP->getInitType()
+            m_cycleP->getInitType(),
+            m_cycleP->getTimeIncrement()
         );
     }
     else {
@@ -198,8 +199,10 @@ void Args::process() {
     }
     resolveRowVsTimestep();
     if (m_cycleP) {
-        DoubleV* cycleColDVP{DoubleV::getOnePFromCol(m_cycleP->getColNo())};
-
+        DoubleV* cycleColDVP{
+            DoubleV::getOnePFromCol(m_cycleP->getCycleColNo())
+        };
+        // Calculate cycle data and update
         if (m_cycleP->getInitType() == CmdArgs::CycleInit::full) {
             m_cycleP->setCalcCDataAndCycleInputCount(
                 cycleColDVP->findCycles(m_rowP->getRowBgn(),
@@ -220,24 +223,31 @@ void Args::process() {
                     m_cycleP->getInputCount())
             );
         }
-
-        // Update cycles, rows and timesteps
+        // Update rows and timesteps
         m_rowP->setRowBgn(m_cycleP->getCalcCycleData().rowInitial);
         m_rowP->setRowEnd(m_cycleP->getCalcCycleData().rowFinal);
         if (m_timestepP->isTimestepConsistent()) {
             m_timestepP->setTimestepBgnFromRow(
                 m_cycleP->getCalcCycleData().rowInitial
             );
+
             m_timestepP->setTimestepEndFromRow(
                 m_cycleP->getCalcCycleData().rowFinal
             );
+        }
+        // Calculate frequency
+        if (m_cycleP->getSimTimeColNo()>=0) {
+            m_cycleP->setFrequency(m_rowP->getRowBgn(), m_rowP->getRowEnd());
+        }
+        else if(m_cycleP->getTimeIncrement()>=0.0) {
+            m_cycleP->setFrequency(m_timestepP->getRange());
         }
     }
     if (m_fourierP) {
         if (m_cycleP) {
             m_fourierP->process(
                 m_columnP->getDataDoubleVSetP(),
-                m_cycleP->getColNo(),
+                m_cycleP->getCycleColNo(),
                 m_rowP->getRowBgn(), m_rowP->getRowEnd(),
                 m_fileInP->getFileLocation()
             );
@@ -615,7 +625,8 @@ void Timestep::importDataTimestep(const ColData::IntV* dataTimestepIVP) {
     }
 }
 void Timestep::process(bool timestepDefined1, bool timestepDefined2,
-        size_t timestep1, size_t timestep2, CycleInit cycleInitStatus) {
+        size_t timestep1, size_t timestep2, CycleInit cycleInitStatus,
+        double timeIncrement) {
     if (timestepDefined1 && timestepDefined2) {
         m_timestepBgn = timestep1;
         m_timestepEnd = timestep2;
@@ -631,10 +642,13 @@ void Timestep::process(bool timestepDefined1, bool timestepDefined2,
         m_timestepEnd = timestep1;
         m_timestepEndDefined = true;
     }
+    if (!get<0>(m_dataTimestepRange) && timeIncrement >= 0.0) {
+        throw logic_error(errorDataTimestepInconsistent);
+    }
     Timestep::process();
 }
 void Timestep::process() {
-    if (get<0>(m_dataTimestepRange)) {// is input timestep range consistent
+    if (get<0>(m_dataTimestepRange)) {// is input data timestep range consistent
         if (m_timestepBgnDefined && m_timestepEndDefined
                 && m_timestepBgn > m_timestepEnd) {
             size_t temp = m_timestepBgn;
@@ -733,12 +747,54 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
                     && ((pos=cycleArg.find("m=")) != string::npos)) {
                 cycleArg.erase(0, pos+2);
                 string numStr{"0123456789Ee-+."};
-                if (all_of(cycleArg.begin(), cycleArg.end(), [&](char c) {
-                        return (numStr.find(c) != string::npos); })) {
+                if (all_of(cycleArg.begin(), cycleArg.end(),
+                        [&](char c) {
+                            return (numStr.find(c) != string::npos);
+                        })) {
                     m_center = stod(cycleArg);
                 }
                 else {
                     throw invalid_argument{errorCycleCenterInvalid};
+                }
+            }
+            else if (m_timeIncrement < 0.0
+                    && ((pos=cycleArg.find("dt=")) != string::npos)) {
+                cycleArg.erase(0, pos+3);
+                string numStr{"0123456789Ee-+."};
+                if (all_of(cycleArg.begin(), cycleArg.end(),
+                        [&](char c) {
+                            return (numStr.find(c) != string::npos);
+                        })) {
+                    m_timeIncrement = stod(cycleArg);
+                }
+                else {
+                    throw invalid_argument{errorTimeIncrementInvalid};
+                }
+            }
+            else if (m_simTimeColNo<0
+                    && (pos=cycleArg.find("st=")) != string::npos) {
+                cycleArg.erase(0, pos+3);
+                bool colExists{false};
+                if (all_of(cycleArg.begin(), cycleArg.end(), isdigit)) {
+                    m_simTimeColNo = stoi(cycleArg);
+                    for (ColData::DoubleV* dVP : dataDoubleVSetP) {
+                        if (m_simTimeColNo == dVP->getColNo()) {
+                            colExists = true;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    for (ColData::DoubleV* dVP : dataDoubleVSetP) {
+                        if (cycleArg == dVP->getColName()) {
+                            m_simTimeColNo = dVP->getColNo();
+                            colExists = true;
+                            break;
+                        }
+                    }
+                }
+                if (!colExists) {
+                    throw invalid_argument(errorColAbsent);
                 }
             }
             else if (!get<0>(m_rowDefined)
@@ -765,7 +821,7 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
                 if (stoi(cycleArg) < 0) {
                     throw invalid_argument(errorTimestepRangeInvalid);
                 }
-                get<0>(m_timestepRange) = stoi(cycleArg);
+                get<0>(m_timestepDefRange) = stoi(cycleArg);
                 get<0>(m_timestepDefined) = true;
             }
             else if (!get<1>(m_timestepDefined)
@@ -774,17 +830,17 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
                 if (stoi(cycleArg) <= 0) {
                     throw invalid_argument(errorTimestepRangeInvalid);
                 }
-                get<1>(m_timestepRange) = stoi(cycleArg);
+                get<1>(m_timestepDefRange) = stoi(cycleArg);
                 get<1>(m_timestepDefined) = true;
             }
-            else if (m_colNo<0) {
+            else if (m_cycleColNo<0) {
                 if ((pos=cycleArg.find("c=")) != string::npos) {
                     cycleArg.erase(0, pos+2);
                     bool colExists{false};
                     if (all_of(cycleArg.begin(), cycleArg.end(), isdigit)) {
-                        m_colNo = stoi(cycleArg);
+                        m_cycleColNo = stoi(cycleArg);
                         for (ColData::DoubleV* dVP : dataDoubleVSetP) {
-                            if (m_colNo == dVP->getColNo()) {
+                            if (m_cycleColNo == dVP->getColNo()) {
                                 colExists = true;
                                 break;
                             }
@@ -793,24 +849,24 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
                     else {
                         for (ColData::DoubleV* dVP : dataDoubleVSetP) {
                             if (cycleArg == dVP->getColName()) {
-                                m_colNo = dVP->getColNo();
+                                m_cycleColNo = dVP->getColNo();
                                 colExists = true;
                                 break;
                             }
                         }
                     }
                     if (!colExists) {
-                        throw invalid_argument(errorColNoAbsent);
+                        throw invalid_argument(errorColAbsent);
                     }
                 }
                 else {
                     for (ColData::DoubleV* dVP : dataDoubleVSetP) {
                         if (cycleArg == dVP->getColName()) {
-                            m_colNo = dVP->getColNo();
+                            m_cycleColNo = dVP->getColNo();
                             break;
                         }
                     }
-                    if (m_colNo<0) {
+                    if (m_cycleColNo<0) {
                         throw invalid_argument(errorCycleColNameInvalid);
                     }
                 }
@@ -822,7 +878,7 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
     }
     if (m_fileName == "auto") {
         string fileNameAffix{
-            "_cycles_c" + to_string(m_colNo) + "_r"
+            "_cycles_c" + to_string(m_cycleColNo) + "_r"
             + to_string(get<0>(m_rowRange)) + "to"
             + to_string(get<1>(m_rowRange)) + ".csv"
         };
@@ -836,7 +892,7 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
         }
     }
     // Error checking
-    if (m_colNo<0) {
+    if (m_cycleColNo<0) {
         throw logic_error(errorCycleColNameMissing);
     }
     if (m_cycleInputCount>0 &&
@@ -858,20 +914,37 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
     if (m_cycleInputCount>0 && m_cycleInit == CycleInit::empty) {
         m_cycleInit = CycleInit::last;
     }
+    if (m_simTimeColNo >= 0 && m_timeIncrement >= 0.0) {
+        throw logic_error(errorFrequencyTooManyArguments);
+    }
 }
 void Cycle::setCalcCDataAndCycleInputCount(ColData::CycleData cData) {
     m_calcCycleData = cData;
     m_cycleInputCount = cData.cycleCount;
 }
+void Cycle::setFrequency(size_t rowBgn, size_t rowEnd) {
+    vector<double> simTimeColData{
+        DoubleV::getOnePFromCol(m_simTimeColNo)->getData()
+    };
+    m_frequency = m_cycleInputCount /
+        (simTimeColData[rowEnd] - simTimeColData[rowBgn]);
+}
+void Cycle::setFrequency(tuple <size_t, size_t> timestepRange) {
+    m_frequency = m_cycleInputCount /
+        (m_timeIncrement*(get<1>(timestepRange) - get<0>(timestepRange)));
+}
 int Cycle::getInputCount() const        { return m_cycleInputCount; }
 CycleInit Cycle::getInitType() const    { return m_cycleInit; }
-int Cycle::getColNo() const             { return m_colNo; }
+int Cycle::getCycleColNo() const        { return m_cycleColNo; }
+int Cycle::getSimTimeColNo() const      { return m_simTimeColNo; }
 double Cycle::getCenter() const         { return m_center; }
+double Cycle::getTimeIncrement() const  { return m_timeIncrement; }
+double Cycle::getFrequency() const      { return m_frequency; }
 const tuple<size_t, size_t> Cycle::getRowDefRange() const {
     return m_rowRange;
 }
 const tuple<size_t, size_t> Cycle::getTimestepDefRange() const {
-    return m_timestepRange;
+    return m_timestepDefRange;
 }
 const tuple<bool, bool> Cycle::getRowDefStatus() const {
     return m_rowDefined;

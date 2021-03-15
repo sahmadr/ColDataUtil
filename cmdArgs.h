@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.3beta
+ * @version     ColDataUtil 1.3
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -225,7 +225,8 @@ class CmdArgs::Timestep {
 
     void importDataTimestep(const ColData::IntV* dataTimestepIVP);
     void process(bool timestepDefined1, bool timestepDefined2,
-        size_t timestep1, size_t timestep2, CycleInit cycleInitStatus);
+        size_t timestep1, size_t timestep2, CycleInit cycleInitStatus,
+        double timeIncrement);
     void process();
 
     void setTimestepBgn(size_t val);
@@ -254,14 +255,17 @@ class CmdArgs::Cycle {
     vector<string>          m_argV{};
     CycleInit               m_cycleInit{CycleInit::empty};
     int                     m_cycleInputCount{-1};
-    int                     m_colNo{-1};
+    int                     m_cycleColNo{-1};
     double                  m_center{0.0};
     tuple<bool, bool>       m_rowDefined{false, false};
     tuple<size_t, size_t>   m_rowRange{0, 0};
     tuple<bool, bool>       m_timestepDefined{false, false};
-    tuple<size_t, size_t>   m_timestepRange{0, 0};
+    tuple<size_t, size_t>   m_timestepDefRange{0, 0};
     string                  m_fileName{""};
     ColData::CycleData      m_calcCycleData{};
+    int                     m_simTimeColNo{-1};
+    double                  m_timeIncrement{-1.0};
+    double                  m_frequency{-1.0};
 
     Cycle(const Cycle&) = delete;
     Cycle& operator=(const Cycle&) = delete;
@@ -276,11 +280,16 @@ class CmdArgs::Cycle {
         const string& fileInName);
 
     void setCalcCDataAndCycleInputCount(ColData::CycleData);
+    void setFrequency(size_t rowBgn, size_t rowEnd);
+    void setFrequency(tuple <size_t, size_t> timestepRange);
 
     int getInputCount() const;
     CycleInit getInitType() const;
-    int getColNo() const;
+    int getCycleColNo() const;
+    int getSimTimeColNo() const;
     double getCenter() const;
+    double getTimeIncrement() const;
+    double getFrequency() const;
     const tuple<size_t, size_t> getRowDefRange() const;
     const tuple<size_t, size_t> getTimestepDefRange() const;
     const tuple<bool, bool> getRowDefStatus() const;
@@ -402,7 +411,7 @@ class CmdArgs::Version {
   private:
     const string
         m_program     {"ColDataUtil"},
-        m_version     {"1.3beta"},
+        m_version     {"1.3"},
         m_copyright   {"Copyright (C) 2020"},
         m_author      {"Syed Ahmad Raza"},
         m_email       {"git@ahmads.org"},

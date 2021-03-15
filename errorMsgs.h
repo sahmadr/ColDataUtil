@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.3beta
+ * @version     ColDataUtil 1.3
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -91,6 +91,9 @@ errorCycleTooFewArguments{"Too few arguments have been specified for the cycle "
 errorCycleTooManyArguments{"Too many arguments have been specified for the "
     "cycle option."},
 errorCycleInvalidForCalc{"No cycles were found for calculation."},
+errorTimeIncrementInvalid{"Requested value for time increment is invalid."},
+errorFrequencyTooManyArguments{"A value for the time increment and the column "
+    "for simulation time both have been specified. Please select only one."},
 errorFourierArgumetInvalid{"An invalid argument has been specified for the FFT "
     "option."},
 errorFourierColNameInvalid{"The column name specified for the FFT option is "

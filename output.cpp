@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.3beta
+ * @version     ColDataUtil 1.3
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -151,6 +151,7 @@ void Output::printer(
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet,
         const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP) {
+    int cycleCount{cycleP->getInputCount()};
     size_t rBgn, rEnd, tBgn, tEnd;
     tie(rBgn, rEnd) = rowRange;
     tie(tBgn, tEnd) = timestepRange;
@@ -165,28 +166,26 @@ void Output::printer(
         << to_string(rBgn) << " to " << to_string(rEnd);
     if (cycleP) {
         ColData::CycleData cData{cycleP->getCalcCycleData()};
-        DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getColNo())};
+        DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getCycleColNo())};
 
         cout<< "\n Column for cycles => " << cycleColDVP->getColName()
             << "\n Center for cycles => " << cycleP->getCenter()
-            << "\n Number of cycles  => " << cycleP->getInputCount();
-        if (cData.crests.size() > 0 || cData.troughs.size() > 0) {
-            cout<< '\n';
-            if (cData.crests.size() > 0) {
-                cout<< "\n Crests mean       => " << cData.crestsMean;
-            }
-            if (cData.troughs.size() > 0) {
-                cout<< "\n Troughs mean      => " << cData.troughsMean;
-            }
-        }
-        cout<< '\n' << "\n Peaks maximum     => " << cData.peaks[0];
-        if (cData.peaks.size() > 0) {
-            cout<<"\n Peaks mean        => " << cData.peaksMean;
+            << "\n Number of cycles  => " << cycleCount;
+        if (cycleCount > 0 ) {
+            cout<< '\n'
+                << "\n Crests mean       => "   << cData.crestsMean
+                << "\n Troughs mean      => "   << cData.troughsMean
+                << '\n'
+                << "\n Peaks maximum     => " << cData.peaks[0]
+                << "\n Peaks mean        => "   << cData.peaksMean;
             if (cData.peaks.size()/3 > 0) {
                 cout<< "\n 1/3rd peaks mean  => " << cData.peaksOneThirdMean;
                 if (cData.peaks.size()/10 > 0) {
                     cout<< "\n 1/10th peaks mean => "<< cData.peaksOneTenthMean;
                 }
+            }
+            if (cycleP->getFrequency() >= 0.0) {
+                cout<< "\n\n Cycle frequency   => " << cycleP->getFrequency();
             }
         }
     }
@@ -224,6 +223,7 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet,
         const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP) {
+    int cycleCount{cycleP->getInputCount()};
     size_t rBgn, rEnd, tBgn, tEnd;
     tie(rBgn, rEnd) = rowRange;
     tie(tBgn, tEnd) = timestepRange;
@@ -244,29 +244,27 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
         << to_string(rBgn) << " to " << to_string(rEnd);
     if (cycleP) {
         ColData::CycleData cData{cycleP->getCalcCycleData()};
-        DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getColNo())};
+        DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getCycleColNo())};
 
-        fOut<< "\nColumn for cycles => "<< cycleColDVP->getColName()
-            << "\nCenter for cycles => "  << cycleP->getCenter()
-            << "\nNumber of cycles  => "  << cycleP->getInputCount();
+        fOut<< "\nColumn for cycles => " << cycleColDVP->getColName()
+            << "\nCenter for cycles => " << cycleP->getCenter()
+            << "\nNumber of cycles  => " << cycleCount;
 
-        if (cData.crests.size() > 0 || cData.troughs.size() > 0) {
-            fOut<< '\n';
-            if (cData.crests.size() > 0) {
-                fOut<< "\nCrests mean       => " << cData.crestsMean;
-            }
-            if (cData.troughs.size() > 0) {
-                fOut<< "\nTroughs mean      => " << cData.troughsMean;
-            }
-        }
-        fOut<< '\n' << "\nPeaks maximum     => " << cData.peaks[0];
-        if (cData.peaks.size() > 0) {
-            fOut<< "\nPeaks mean        => " << cData.peaksMean;
+        if (cycleCount > 0 ) {
+            fOut<< '\n'
+                << "\nCrests mean       => "   << cData.crestsMean
+                << "\nTroughs mean      => "   << cData.troughsMean
+                << '\n'
+                << "\nPeaks maximum     => " << cData.peaks[0]
+                << "\nPeaks mean        => "   << cData.peaksMean;
             if (cData.peaks.size()/3 > 0) {
                 fOut<< "\n1/3rd peaks mean  => " << cData.peaksOneThirdMean;
                 if (cData.peaks.size()/10 > 0) {
-                    fOut<< "\n1/10th peaks mean => " << cData.peaksOneTenthMean;
+                    fOut<< "\n1/10th peaks mean => "<< cData.peaksOneTenthMean;
                 }
+            }
+            if (cycleP->getFrequency() >= 0.0) {
+                fOut<< "\n\nCycle frequency   => " << cycleP->getFrequency();
             }
         }
     }
@@ -307,7 +305,7 @@ void Output::cyclePeaksFiler(const CmdArgs::Cycle* cycleP,
     fOut.precision(numeric_limits<double>::max_digits10);
     fOut<< "Input file: " << fileInName
         << "\nColumn for cycles => "
-        << DoubleV::getOnePFromCol(cycleP->getColNo())->getColName()
+        << DoubleV::getOnePFromCol(cycleP->getCycleColNo())->getColName()
         << "\nCenter for cycles => "  << cycleP->getCenter()
         << "\nNumber of cycles  => "  << cycleP->getInputCount()
         << '\n' << string(70, '`')

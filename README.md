@@ -43,12 +43,12 @@ OPTIONS
                 a correctly formatted timestep column is mandatory for this
                 option to work;
                 the timestep column should be an integer column with "step" in
-                its column header
+                its column header name
 
         -c, --col [COLUMN1, COLUMN2, ...]
                 specify the column (or columns) for calculations; column(s) can
                 be specified by its index (with index starting from zero) or its
-                exact name
+                exact column header name
 
         -C, -a, --calc, --calculations [CALCULATION1, CALCULATION2, ...]
                 specify the calculations to perform;
@@ -68,10 +68,11 @@ OPTIONS
         -y, --cycle COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o/o=FILENAME]
                     [r=BEGINROW r=ENDROW] [t=BEGINTIMESTEP t=ENDTIMESTEP]
                     [f/l/first/last] [NUMBEROFCYCLES] [m=CENTER]
+                    [dt=TIMEINCREMENT] [st=SIMTIMECOLUMN]
                 command to count the number of cycles in the given file and
                 find the peaks of each cycle using its crest and trough, which
                 is then used to calculate the maximum peak and the various
-                mean values (described below);
+                mean values (described below), and optionally, the frequency;
                 the name of the column to be used for counting cycles must be
                 given, either stated directly after the option or given using
                 c=COLUMNNAME, or alternatively, the column number may be given
@@ -151,6 +152,17 @@ OPTIONS
                 m=CENTER: by default, the cycles are counted assuming a center
                         or mean position of zero. However, another center or
                         mean position can be input using this option.
+                dt=TIMEINCREMENT: may be used to calculate the frequency of
+                        cycles by specifying a value for the time increment, if
+                        a correctly formatted timestep column is available in
+                        the file (and if the time increment is constant), which
+                        should be recognized automatically. The timestep column
+                        should be a column with only increasing (ascending)
+                        integer values and "step" in the column header name. It
+                        cannot be specified together with st=SIMTIMECOLUMN.
+                st=SIMTIMECOLUMN: may be used to calculate the frequency of
+                        cycles by specifying the column with simulation time. It
+                        cannot be specified together with dt=TIMEINCREMENT.
 
         -f, --fourier COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o/o=FILENAME]
                 command to calculate the Fast Fourier Transform (FFT) of the
