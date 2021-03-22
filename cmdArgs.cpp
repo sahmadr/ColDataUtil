@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.3
+ * @version     ColDataUtil 1.4
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -207,7 +207,8 @@ void Args::process() {
             m_cycleP->setCalcCDataAndCycleInputCount(
                 cycleColDVP->findCycles(
                     m_rowP->getRowBgn(), m_rowP->getRowEnd(),
-                    m_cycleP->getCenter(), m_cycleP->getMinAmplitude()
+                    m_cycleP->getCenter(), m_cycleP->getMinAmplitude(),
+                    m_cycleP->getMinRowInterval()
                 )
             );
         }
@@ -216,7 +217,7 @@ void Args::process() {
                 cycleColDVP->findCyclesFirst(
                     m_rowP->getRowBgn(), m_rowP->getRowEnd(),
                     m_cycleP->getCenter(), m_cycleP->getMinAmplitude(),
-                    m_cycleP->getInputCount()
+                    m_cycleP->getMinRowInterval(), m_cycleP->getInputCount()
                 )
             );
         }
@@ -225,7 +226,7 @@ void Args::process() {
                 cycleColDVP->findCyclesLast(
                     m_rowP->getRowBgn(), m_rowP->getRowEnd(),
                     m_cycleP->getCenter(), m_cycleP->getMinAmplitude(),
-                    m_cycleP->getInputCount()
+                    m_cycleP->getMinRowInterval(), m_cycleP->getInputCount()
                 )
             );
         }
@@ -709,7 +710,7 @@ Cycle::Cycle(int c, int argC, const vector<string>& argV) {
     init(c, argC, argV);
 }
 void Cycle::init(int c, int argC, const vector<string>& argV) {
-    while (c+1 < argC && argV[c+1][0] != '-' && m_argV.size() < 5) {
+    while (c+1 < argC && argV[c+1][0] != '-' && m_argV.size() < 10) {
         Args::setCount(++c);
         ++m_argC;
         m_argV.push_back(argV[c]);
@@ -776,6 +777,14 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
                 else {
                     throw invalid_argument{errorCycleMinAmplitudeInvalid};
                 }
+            }
+            else if (m_minRowInterval == 0
+                    && ((pos=cycleArg.find("n=")) != string::npos)) {
+                cycleArg.erase(0, pos+2);
+                if (stoi(cycleArg) < 0){
+                    throw invalid_argument{errorCycleMinRowIntervalInvalid};
+                }
+                m_minRowInterval = stoi(cycleArg);
             }
             else if (m_timeIncrement < 0.0
                     && ((pos=cycleArg.find("dt=")) != string::npos)) {
@@ -961,6 +970,7 @@ double Cycle::getCenter() const         { return m_center; }
 double Cycle::getTimeIncrement() const  { return m_timeIncrement; }
 double Cycle::getFrequency() const      { return m_frequency; }
 double Cycle::getMinAmplitude() const   { return m_minAmplitude; }
+size_t Cycle::getMinRowInterval() const { return m_minRowInterval; }
 const tuple<size_t, size_t> Cycle::getRowDefRange() const {
     return m_rowRange;
 }

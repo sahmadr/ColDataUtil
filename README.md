@@ -68,7 +68,7 @@ OPTIONS
         -y, --cycle COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o/o=FILENAME]
                     [r=BEGINROW r=ENDROW] [t=BEGINTIMESTEP t=ENDTIMESTEP]
                     [f/l/first/last] [NUMBEROFCYCLES]
-                    [m=CENTER] [a=MINAMPLITUDE]
+                    [m=CENTER] [a=MINAMPLITUDE] [n=MINROWINTERVAL]
                     [dt=TIMEINCREMENT] [st=SIMTIMECOLUMN]
                 command to count the number of cycles in the given file and
                 find the peaks of each cycle using its crest and trough, which
@@ -159,7 +159,20 @@ OPTIONS
                         amplitude may be specified using this option to count
                         only those cycles that have an amplitude greater than
                         MINAMPLITUDE, which should be input as an absolute
-                        value, without the negative sign.
+                        value, without the negative sign. This option maybe
+                        specified along with n=MINROWINTERVAL, in which case,
+                        both the conditions must be satisfied for a cycle to be
+                        counted.
+                n=MINROWINTERVAL: by default, all cycles are counted, however
+                        small the row interval (or half the wave period)
+                        maybe. However, in order to filter out the irrelevant
+                        minor fluctuations, a minimum row interval maybe
+                        specified, which should be a positive integer value. It
+                        should be selected considering half the wave period
+                        (equal to half the minimum number of rows or data points
+                        requried for a cycle). This option maybe specified along
+                        with a=MINAMPLITUDE, in which case, both the conditions
+                        must be satisfied for a cycle to be counted.
                 dt=TIMEINCREMENT: may be used to calculate the frequency of
                         cycles by specifying a value for the time increment, if
                         a correctly formatted timestep column is available in

@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.3
+ * @version     ColDataUtil 1.4
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -267,6 +267,7 @@ class CmdArgs::Cycle {
     double                  m_timeIncrement{-1.0};
     double                  m_frequency{-1.0};
     double                  m_minAmplitude{0.0};
+    size_t                  m_minRowInterval{0};
 
     Cycle(const Cycle&) = delete;
     Cycle& operator=(const Cycle&) = delete;
@@ -292,6 +293,7 @@ class CmdArgs::Cycle {
     double getTimeIncrement() const;
     double getFrequency() const;
     double getMinAmplitude() const;
+    size_t getMinRowInterval() const;
     const tuple<size_t, size_t> getRowDefRange() const;
     const tuple<size_t, size_t> getTimestepDefRange() const;
     const tuple<bool, bool> getRowDefStatus() const;
@@ -413,7 +415,7 @@ class CmdArgs::Version {
   private:
     const string
         m_program     {"ColDataUtil"},
-        m_version     {"1.3"},
+        m_version     {"1.4"},
         m_copyright   {"Copyright (C) 2020"},
         m_author      {"Syed Ahmad Raza"},
         m_email       {"git@ahmads.org"},

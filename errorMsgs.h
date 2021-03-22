@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.3
+ * @version     ColDataUtil 1.4
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -71,6 +71,8 @@ errorCycleMissing{"Number of cycles have not been specified. Please enter the "
     "required number of cycles or remove the \"first\" or \"last\" flag."},
 errorCycleCenterInvalid{"Requested value for the center of cycles is invalid."},
 errorCycleMinAmplitudeInvalid{"Requested value for the minimum amplitude of "
+    "cycles is invalid."},
+errorCycleMinRowIntervalInvalid{"Requested value for the minimum row interval of "
     "cycles is invalid."},
 errorCycleNotAvailable{"Requested number of cycles are not available in the "
     "given data file for the given column."},

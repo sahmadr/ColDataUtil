@@ -1,5 +1,5 @@
 /**
- * @version     ColDataUtil 1.3
+ * @version     ColDataUtil 1.4
  * @author      Syed Ahmad Raza (git@ahmads.org)
  * @copyright   GPLv3+: GNU Public License version 3 or later
  *
@@ -109,11 +109,14 @@ class ColData::DoubleV {
     double getSumOfSquares(const size_t rowBgn, const size_t rowEnd) const;
     double getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const;
     CycleData findCycles(const size_t rowBgn, const size_t rowEnd,
-        const double mean, const double minAmp) const;
+        const double mean, const double minAmplitude,
+        const size_t minRowInterval) const;
     CycleData findCyclesFirst(const size_t rowBgn, const size_t rowEnd,
-        const double mean, const double minAmp, const int cycles) const;
+        const double mean, const double minAmplitude,
+        const size_t minRowInterval, const int cycles) const;
     CycleData findCyclesLast(const size_t rowBgn, const size_t rowEnd,
-        const double mean, const double minAmp, const int cycles) const;
+        const double mean, const double minAmplitude,
+        const size_t minRowInterval, const int cycles) const;
 };
 
 #endif
