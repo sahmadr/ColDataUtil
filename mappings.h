@@ -22,7 +22,6 @@ inline const unordered_map<string, Option> CmdArgs::mapStrToOption {
     {"-t",              Option::timestep},
     {"-y",              Option::cycle},
     {"-f",              Option::fourier},
-    {"-a",              Option::calculation},
     {"-C",              Option::calculation},
     // {"-d",              Option::fileOut},
     {"-o",              Option::fileOut},

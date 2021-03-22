@@ -50,7 +50,7 @@ OPTIONS
                 be specified by its index (with index starting from zero) or its
                 exact column header name
 
-        -C, -a, --calc, --calculations [CALCULATION1, CALCULATION2, ...]
+        -C, --calc, --calculations [CALCULATION1, CALCULATION2, ...]
                 specify the calculations to perform;
                 by default, following will be performed:...;
                 the names of all the possible calculation options are given
@@ -67,7 +67,8 @@ OPTIONS
 
         -y, --cycle COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o/o=FILENAME]
                     [r=BEGINROW r=ENDROW] [t=BEGINTIMESTEP t=ENDTIMESTEP]
-                    [f/l/first/last] [NUMBEROFCYCLES] [m=CENTER]
+                    [f/l/first/last] [NUMBEROFCYCLES]
+                    [m=CENTER] [a=MINAMPLITUDE]
                     [dt=TIMEINCREMENT] [st=SIMTIMECOLUMN]
                 command to count the number of cycles in the given file and
                 find the peaks of each cycle using its crest and trough, which
@@ -90,9 +91,9 @@ OPTIONS
                         range.
                 2. Troughs mean: is the mean of all the troughs in the given
                         range.
-                3. Peaks mean: is the maximum of all the peaks, where a peak is
-                        calculated by subtracting the mean from each crest or
-                        trough and taking its absolute value
+                3. Peaks mean: is the maximum of all the peaks (or amplitudes),
+                        where a peak is calculated by subtracting the mean from
+                        each crest or trough and taking its absolute value.
                 4. Peaks mean: is the mean of all the peaks.
                 5. 1/3rd peaks mean: is the mean of the highest 1/3rd of the
                         peaks, similar to the significant wave height (SWH) used
@@ -152,6 +153,13 @@ OPTIONS
                 m=CENTER: by default, the cycles are counted assuming a center
                         or mean position of zero. However, another center or
                         mean position can be input using this option.
+                a=MINAMPLITUDE: by default, all cycles are counted, however
+                        small their amplitude maybe. However, in order to filter
+                        out the irrelevant minor fluctuations, a minimum
+                        amplitude may be specified using this option to count
+                        only those cycles that have an amplitude greater than
+                        MINAMPLITUDE, which should be input as an absolute
+                        value, without the negative sign.
                 dt=TIMEINCREMENT: may be used to calculate the frequency of
                         cycles by specifying a value for the time increment, if
                         a correctly formatted timestep column is available in

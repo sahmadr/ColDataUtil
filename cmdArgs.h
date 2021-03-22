@@ -266,6 +266,7 @@ class CmdArgs::Cycle {
     int                     m_simTimeColNo{-1};
     double                  m_timeIncrement{-1.0};
     double                  m_frequency{-1.0};
+    double                  m_minAmplitude{0.0};
 
     Cycle(const Cycle&) = delete;
     Cycle& operator=(const Cycle&) = delete;
@@ -290,6 +291,7 @@ class CmdArgs::Cycle {
     double getCenter() const;
     double getTimeIncrement() const;
     double getFrequency() const;
+    double getMinAmplitude() const;
     const tuple<size_t, size_t> getRowDefRange() const;
     const tuple<size_t, size_t> getTimestepDefRange() const;
     const tuple<bool, bool> getRowDefStatus() const;

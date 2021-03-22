@@ -187,8 +187,8 @@ double DoubleV::getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const {
 }
 
 // Cycles --------------------------------------------------------------------//
-CycleData DoubleV::findCycles(const size_t rowBgn,
-        const size_t rowEnd, const double mean) const {
+CycleData DoubleV::findCycles(const size_t rowBgn, const size_t rowEnd,
+        const double mean, const double minAmp) const {
     size_t r{rowBgn}, rowInitial{rowBgn}, rowFinal{rowEnd}, rowLast{rowEnd};
     bool foundInitial{false};
     int cycleCount{0}, crossings{0}, maxCrossings{2};
@@ -224,28 +224,38 @@ CycleData DoubleV::findCycles(const size_t rowBgn,
 
     r = rowInitial;
     while (r<=rowLast) {
-        if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
-                || ((r+2 > rowLast) && (crossings > 0)
-                    && (m_data[r+1] == mean))) {
+        cycleMin = (m_data[r] < cycleMin) ? m_data[r] : cycleMin;
+        cycleMax = (m_data[r] > cycleMax) ? m_data[r] : cycleMax;
+        bool
+            isSignbitDiff{
+                signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)
+            },
+            isCycleMaxLarge{std::abs(cycleMax - mean) >= minAmp},
+            isCycleMinLarge{std::abs(cycleMin - mean) >= minAmp};
+        if (
+                (isSignbitDiff && (
+                    (crossings == 0 && (isCycleMaxLarge || isCycleMinLarge)) ||
+                    (crossings == 1 && (isCycleMaxLarge && isCycleMinLarge)) ||
+                    (crossings <  0)
+                )) ||
+                (crossings == 1 && r+2 > rowLast && m_data[r+1] == mean)
+           ) {
             ++crossings;
             if (crossings == maxCrossings) {
+                crossings = 0;
                 ++cycleCount;
                 crests.push_back(cycleMax);
                 troughs.push_back(cycleMin);
                 peaks.push_back(std::abs(cycleMax - mean));
                 peaks.push_back(std::abs(cycleMin - mean));
                 cycleMax = cycleMin = mean;
-                crossings = 0;
                 rowFinal =
                     (std::abs(m_data[r] - mean)<std::abs(m_data[r+1] - mean)) ?
                         r : (r+1);
             }
         }
-        cycleMin = (m_data[r] < cycleMin) ? m_data[r] : cycleMin;
-        cycleMax = (m_data[r] > cycleMax) ? m_data[r] : cycleMax;
         ++r;
     }
-
     CycleData cData{calculateCycleData(crests, troughs, peaks)};
     cData.cycleCount = cycleCount;
     cData.rowInitial = rowInitial;
@@ -254,8 +264,8 @@ CycleData DoubleV::findCycles(const size_t rowBgn,
     return cData;
 }
 
-CycleData DoubleV::findCyclesFirst(const size_t rowBgn,
-        const size_t rowEnd, const double mean, const int cycles) const {
+CycleData DoubleV::findCyclesFirst(const size_t rowBgn, const size_t rowEnd,
+        const double mean, const double minAmp, const int cycles) const {
     size_t r{rowBgn}, rowInitial{rowBgn}, rowFinal{rowEnd}, rowLast{rowEnd};
     bool foundInitial{false};
     int cycleCount{0}, crossings{0}, maxCrossings{2};
@@ -291,31 +301,41 @@ CycleData DoubleV::findCyclesFirst(const size_t rowBgn,
 
     r = rowInitial;
     while (r<=rowLast && cycleCount<cycles) {
-        if ((signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean))
-                || ((r+2 > rowLast) && (crossings > 0)
-                    && (m_data[r+1] == mean))) {
+        cycleMin = (m_data[r] < cycleMin) ? m_data[r] : cycleMin;
+        cycleMax = (m_data[r] > cycleMax) ? m_data[r] : cycleMax;
+        bool
+            isSignbitDiff{
+                signbit(m_data[r] - mean) != signbit(m_data[r+1] - mean)
+            },
+            isCycleMaxLarge{std::abs(cycleMax - mean) >= minAmp},
+            isCycleMinLarge{std::abs(cycleMin - mean) >= minAmp};
+        if (
+                (isSignbitDiff && (
+                    (crossings == 0 && (isCycleMaxLarge || isCycleMinLarge)) ||
+                    (crossings == 1 && (isCycleMaxLarge && isCycleMinLarge)) ||
+                    (crossings <  0)
+                )) ||
+                (crossings == 1 && r+2 > rowLast && m_data[r+1] == mean)
+           ) {
             ++crossings;
             if (crossings == maxCrossings) {
+                crossings = 0;
                 ++cycleCount;
                 crests.push_back(cycleMax);
                 troughs.push_back(cycleMin);
                 peaks.push_back(std::abs(cycleMax - mean));
                 peaks.push_back(std::abs(cycleMin - mean));
                 cycleMax = cycleMin = mean;
-                crossings = 0;
                 rowFinal =
                     (std::abs(m_data[r] - mean)<std::abs(m_data[r+1] - mean)) ?
                         r : (r+1);
             }
         }
-        cycleMin = (m_data[r] < cycleMin) ? m_data[r] : cycleMin;
-        cycleMax = (m_data[r] > cycleMax) ? m_data[r] : cycleMax;
         ++r;
     }
     if (cycleCount != cycles) {
         throw invalid_argument(errorCycleNotAvailable);
     }
-
     CycleData cData{calculateCycleData(crests, troughs, peaks)};
     cData.cycleCount = cycleCount;
     cData.rowInitial = rowInitial;
@@ -324,8 +344,8 @@ CycleData DoubleV::findCyclesFirst(const size_t rowBgn,
     return cData;
 }
 
-CycleData DoubleV::findCyclesLast(const size_t rowBgn,
-        const size_t rowEnd, const double mean, const int cycles) const {
+CycleData DoubleV::findCyclesLast(const size_t rowBgn, const size_t rowEnd,
+        const double mean, const double minAmp, const int cycles) const {
     size_t r{rowEnd}, rowFinal{rowEnd}, rowInitial{rowBgn}, rowFirst{rowBgn};
     bool foundFinal{false};
     int cycleCount{0}, crossings{0}, maxCrossings{2};
@@ -361,31 +381,41 @@ CycleData DoubleV::findCyclesLast(const size_t rowBgn,
 
     r = rowFinal;
     while (r>=rowFirst && cycleCount<cycles) {
-        if ((signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean))
-                || ((r-2 < rowFirst) && (crossings > 0)
-                    && (m_data[r-1] == mean))) {
+        cycleMin = (m_data[r] < cycleMin) ? m_data[r] : cycleMin;
+        cycleMax = (m_data[r] > cycleMax) ? m_data[r] : cycleMax;
+        bool
+            isSignbitDiff{
+                signbit(m_data[r] - mean) != signbit(m_data[r-1] - mean)
+            },
+            isCycleMaxLarge{std::abs(cycleMax - mean) >= minAmp},
+            isCycleMinLarge{std::abs(cycleMin - mean) >= minAmp};
+        if (
+                (isSignbitDiff && (
+                    (crossings == 0 && (isCycleMaxLarge || isCycleMinLarge)) ||
+                    (crossings == 1 && (isCycleMaxLarge && isCycleMinLarge)) ||
+                    (crossings <  0)
+                )) ||
+                (crossings == 1 && r-2 < rowFirst && m_data[r-1] == mean)
+           ) {
             ++crossings;
             if (crossings == maxCrossings) {
+                crossings = 0;
                 ++cycleCount;
                 crests.push_back(cycleMax);
                 troughs.push_back(cycleMin);
                 peaks.push_back(std::abs(cycleMax - mean));
                 peaks.push_back(std::abs(cycleMin - mean));
                 cycleMax = cycleMin = mean;
-                crossings = 0;
                 rowInitial =
                     (std::abs(m_data[r] - mean)<std::abs(m_data[r-1] - mean)) ?
                         r : (r-1);
             }
         }
-        cycleMin = (m_data[r] < cycleMin) ? m_data[r] : cycleMin;
-        cycleMax = (m_data[r] > cycleMax) ? m_data[r] : cycleMax;
         --r;
     }
     if (cycleCount != cycles) {
         throw invalid_argument(errorCycleNotAvailable);
     }
-
     CycleData cData{calculateCycleData(crests, troughs, peaks)};
     cData.cycleCount = cycleCount;
     cData.rowInitial = rowInitial;

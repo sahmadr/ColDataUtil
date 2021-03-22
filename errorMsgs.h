@@ -69,7 +69,9 @@ errorTimestepsAlreadySpecified{"Please specify only two values for the "
 errorCycleInvalid{"Requested number of cycles is invalid."},
 errorCycleMissing{"Number of cycles have not been specified. Please enter the "
     "required number of cycles or remove the \"first\" or \"last\" flag."},
-errorCycleCenterInvalid{"Requested value for center of cycles is invalid."},
+errorCycleCenterInvalid{"Requested value for the center of cycles is invalid."},
+errorCycleMinAmplitudeInvalid{"Requested value for the minimum amplitude of "
+    "cycles is invalid."},
 errorCycleNotAvailable{"Requested number of cycles are not available in the "
     "given data file for the given column."},
 errorCycleRowTimestepConflict{"The cycle option has been specified along with "

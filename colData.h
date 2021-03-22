@@ -108,12 +108,12 @@ class ColData::DoubleV {
     double getSum(const size_t rowBgn, const size_t rowEnd) const;
     double getSumOfSquares(const size_t rowBgn, const size_t rowEnd) const;
     double getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const;
-    CycleData findCycles(const size_t rowBgn,
-        const size_t rowEnd, const double mean) const;
-    CycleData findCyclesFirst(const size_t rowBgn,
-        const size_t rowEnd, const double mean, const int cycles) const;
-    CycleData findCyclesLast(const size_t rowBgn,
-        const size_t rowEnd, const double mean, const int cycles) const;
+    CycleData findCycles(const size_t rowBgn, const size_t rowEnd,
+        const double mean, const double minAmp) const;
+    CycleData findCyclesFirst(const size_t rowBgn, const size_t rowEnd,
+        const double mean, const double minAmp, const int cycles) const;
+    CycleData findCyclesLast(const size_t rowBgn, const size_t rowEnd,
+        const double mean, const double minAmp, const int cycles) const;
 };
 
 #endif

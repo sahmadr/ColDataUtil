@@ -205,22 +205,28 @@ void Args::process() {
         // Calculate cycle data and update
         if (m_cycleP->getInitType() == CmdArgs::CycleInit::full) {
             m_cycleP->setCalcCDataAndCycleInputCount(
-                cycleColDVP->findCycles(m_rowP->getRowBgn(),
-                    m_rowP->getRowEnd(), m_cycleP->getCenter())
+                cycleColDVP->findCycles(
+                    m_rowP->getRowBgn(), m_rowP->getRowEnd(),
+                    m_cycleP->getCenter(), m_cycleP->getMinAmplitude()
+                )
             );
         }
         else if (m_cycleP->getInitType() == CmdArgs::CycleInit::first) {
             m_cycleP->setCalcCDataAndCycleInputCount(
-                cycleColDVP->findCyclesFirst(m_rowP->getRowBgn(),
-                    m_rowP->getRowEnd(), m_cycleP->getCenter(),
-                    m_cycleP->getInputCount())
+                cycleColDVP->findCyclesFirst(
+                    m_rowP->getRowBgn(), m_rowP->getRowEnd(),
+                    m_cycleP->getCenter(), m_cycleP->getMinAmplitude(),
+                    m_cycleP->getInputCount()
+                )
             );
         }
         else if (m_cycleP->getInitType() == CmdArgs::CycleInit::last) {
             m_cycleP->setCalcCDataAndCycleInputCount(
-                cycleColDVP->findCyclesLast(m_rowP->getRowBgn(),
-                    m_rowP->getRowEnd(), m_cycleP->getCenter(),
-                    m_cycleP->getInputCount())
+                cycleColDVP->findCyclesLast(
+                    m_rowP->getRowBgn(), m_rowP->getRowEnd(),
+                    m_cycleP->getCenter(), m_cycleP->getMinAmplitude(),
+                    m_cycleP->getInputCount()
+                )
             );
         }
         // Update rows and timesteps
@@ -757,6 +763,20 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
                     throw invalid_argument{errorCycleCenterInvalid};
                 }
             }
+            else if (m_minAmplitude == 0.0
+                    && ((pos=cycleArg.find("a=")) != string::npos)) {
+                cycleArg.erase(0, pos+2);
+                string numStr{"0123456789Ee-+."};
+                if (all_of(cycleArg.begin(), cycleArg.end(),
+                        [&](char c) {
+                            return (numStr.find(c) != string::npos);
+                        })) {
+                    m_minAmplitude = stod(cycleArg);
+                }
+                else {
+                    throw invalid_argument{errorCycleMinAmplitudeInvalid};
+                }
+            }
             else if (m_timeIncrement < 0.0
                     && ((pos=cycleArg.find("dt=")) != string::npos)) {
                 cycleArg.erase(0, pos+3);
@@ -940,6 +960,7 @@ int Cycle::getSimTimeColNo() const      { return m_simTimeColNo; }
 double Cycle::getCenter() const         { return m_center; }
 double Cycle::getTimeIncrement() const  { return m_timeIncrement; }
 double Cycle::getFrequency() const      { return m_frequency; }
+double Cycle::getMinAmplitude() const   { return m_minAmplitude; }
 const tuple<size_t, size_t> Cycle::getRowDefRange() const {
     return m_rowRange;
 }
