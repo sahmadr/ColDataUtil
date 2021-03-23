@@ -149,7 +149,6 @@ void Output::printer(
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet,
         const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP) {
-    int cycleCount{cycleP->getInputCount()};
     size_t rBgn, rEnd, tBgn, tEnd;
     tie(rBgn, rEnd) = rowRange;
     tie(tBgn, tEnd) = timestepRange;
@@ -163,6 +162,7 @@ void Output::printer(
     cout<< "\n Rows              => "
         << to_string(rBgn) << " to " << to_string(rEnd);
     if (cycleP) {
+        int cycleCount{cycleP->getInputCount()};
         ColData::CycleData cData{cycleP->getCalcCycleData()};
         DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getCycleColNo())};
 
@@ -221,7 +221,6 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet,
         const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP) {
-    int cycleCount{cycleP->getInputCount()};
     size_t rBgn, rEnd, tBgn, tEnd;
     tie(rBgn, rEnd) = rowRange;
     tie(tBgn, tEnd) = timestepRange;
@@ -241,6 +240,7 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
     fOut<< "\nRows              => "
         << to_string(rBgn) << " to " << to_string(rEnd);
     if (cycleP) {
+        int cycleCount{cycleP->getInputCount()};
         ColData::CycleData cData{cycleP->getCalcCycleData()};
         DoubleV* cycleColDVP{DoubleV::getOnePFromCol(cycleP->getCycleColNo())};
 
@@ -288,8 +288,9 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
                 fOut << calc(colNo, rBgn, rEnd) << ',';
             }
         }
+        fOut<< '\n' << string(70, '`') << '\n';
     }
-    fOut << '\n';
+    fOut<< '\n' << string(70, '`') << '\n';
     fOut.close();
 }
 
@@ -429,7 +430,9 @@ void Output::dataPrinter(const string& dlm, const size_t dataRowTotal,
     // Print the data
     for (size_t row=0; row<dataRowTotal; ++row) {
         cout << dataTimestepIVP->getData()[row] << dlm;
-        for (DoubleV* dVP : dataDoubleVSetP) { cout << dVP->getData()[row] << dlm;}
+        for (DoubleV* dVP : dataDoubleVSetP) {
+            cout << dVP->getData()[row] << dlm;
+        }
         cout << '\n';
     }
     cout << flush;
