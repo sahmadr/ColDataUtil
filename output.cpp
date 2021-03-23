@@ -61,20 +61,18 @@ void Output::output(CmdArgs::Args* argsP) {
                     argsP->getCycleP(),
                     argsP->getCalcP()
                 );
-                cout<< "\nThe output has been written to \"" << fileOut << "\""
-                    << endl;
+                cout<< "\nThe calculation data output has been written to \""
+                    << fileOut << "\"" << endl;
             }
         }
         if (argsP->getCycleP() && !argsP->getCycleP()->getFileName().empty()) {
-            cyclePeaksFiler(argsP->getCycleP(),
-                argsP->getFileInP()->getFileLocation());
-            cout<< "\nThe output has been written to \""
+            cyclePeaksFiler(argsP->getCycleP());
+            cout<< "\nThe cycle data output has been written to \""
                 << argsP->getCycleP()->getFileName() << "\"" << endl;
         }
     }
     if (argsP->getFourierP()) {
-        fourierCalc(argsP->getFourierP(),
-            argsP->getFileInP()->getFileLocation());
+        fourierCalc(argsP->getFourierP());
     }
     if (argsP->getPrintDataP()) {
         dataPrinter(
@@ -92,7 +90,7 @@ void Output::output(CmdArgs::Args* argsP) {
             argsP->getTimestepP()->getDataTimestepIVP(),
             argsP->getColumnP()->getDataDoubleVSetP()
         );
-        cout<< "\nThe output has been written to \""
+        cout<< "\nThe file data output has been written to \""
             << argsP->getFileDataP()->getFileName() << "\"" << endl;
     }
     cout<<endl;
@@ -295,25 +293,18 @@ void Output::filer(const string& fileOutName,  const string& fileInName,
     fOut.close();
 }
 
-void Output::cyclePeaksFiler(const CmdArgs::Cycle* cycleP,
-        const string& fileInName) {
+void Output::cyclePeaksFiler(const CmdArgs::Cycle* cycleP) {
     ColData::CycleData cData{cycleP->getCalcCycleData()};
     size_t peaksSize{cData.peaks.size()};
     size_t crestsAndTroughsSize{cData.crests.size()};
     ofstream fOut{cycleP->getFileName()};
 
+    fOut<< "Peaks (sorted),Crests (unsorted),Troughs (unsorted)\n";
     fOut.precision(numeric_limits<double>::max_digits10);
-    fOut<< "Input file: " << fileInName
-        << "\nColumn for cycles => "
-        << DoubleV::getOnePFromCol(cycleP->getCycleColNo())->getColName()
-        << "\nCenter for cycles => "  << cycleP->getCenter()
-        << "\nNumber of cycles  => "  << cycleP->getInputCount()
-        << '\n' << string(70, '`')
-        << "\n\n,Peaks (sorted),Crests (unsorted),Troughs (unsorted),\n";
     for (size_t r=0; r<peaksSize; ++r) {
-        fOut<< ',' << cData.peaks[r] << ',';
+        fOut<< cData.peaks[r] << ',';
         if (r<crestsAndTroughsSize) {
-            fOut<< cData.crests[r] << ',' << cData.troughs[r] << ',';
+            fOut<< cData.crests[r] << ',' << cData.troughs[r];
         }
         fOut<< '\n';
     }
@@ -328,8 +319,7 @@ void Output::cyclePeaksFiler(const CmdArgs::Cycle* cycleP,
  */
 #include "fftw3.h"
 
-void Output::fourierCalc(const CmdArgs::Fourier* fourierP,
-        const string& fileInName) {
+void Output::fourierCalc(const CmdArgs::Fourier* fourierP) {
     const size_t
         rowBgn{get<0>(fourierP->getRowRange())},
         rowEnd{get<1>(fourierP->getRowRange())},
@@ -370,9 +360,8 @@ void Output::fourierCalc(const CmdArgs::Fourier* fourierP,
         fftMag.emplace_back(2.*std::abs(fftData[r])*signalLenInv);
     }
     if (!fourierP->getFileName().empty()) {
-        fourierFiler(fourierP->getFileName(), fileInName,
-            DoubleV::getOnePFromCol(fourierP->getColNo())->getColName(),
-            outputLen, outputLenInv, fftData, fftMag);
+        fourierFiler(fourierP->getFileName(), outputLen, outputLenInv,
+            fftData, fftMag);
     }
 
     // Print partial results
@@ -398,28 +387,23 @@ void Output::fourierCalc(const CmdArgs::Fourier* fourierP,
     }
     cout<< '\n' << string(55, '=') << '\n';
     if (!fourierP->getFileName().empty()) {
-        cout<< "\nThe output has been written to \""
+        cout<< "\nThe FFT data output has been written to \""
             << fourierP->getFileName() << "\"" << endl;
     }
 
     fftw_destroy_plan(plan);
 }
 
-void Output::fourierFiler(const string& fileOutName, const string& fileInName,
-        const string& colName, const size_t outputLen,
+void Output::fourierFiler(const string& fileOutName, const size_t outputLen,
         const double outputLenInv, const vector<std::complex<double>>& fftData,
         const vector<double>& fftMag) {
     ofstream fOut{fileOutName};
+    fOut<< "Frequency,Magnitude,Phase\n";
     fOut.precision(numeric_limits<double>::max_digits10);
-    fOut<< "Input file: " << fileInName
-        << "\nColumn for FFT => " << colName << '\n' << string(70, '`')
-        << "\n\n,Frequency,Magnitude,Phase,\n";
     for (size_t r=0; r<outputLen; ++r) {
-        fOut<<','
-            << static_cast<double>(r)*outputLenInv*100. << ','
+        fOut<< static_cast<double>(r)*outputLenInv*100. << ','
             << fftMag[r] << ','
-            << std::arg(fftData[r]) << ','
-            << '\n';
+            << std::arg(fftData[r]) << '\n';
     }
     fOut.close();
 }

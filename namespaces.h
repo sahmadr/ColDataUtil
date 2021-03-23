@@ -160,12 +160,9 @@ namespace Output {
         const vector<int>& doubleColSet,
         const vector<CmdArgs::CalcId>& calcIdSet,
         const CmdArgs::Cycle* cycleP, const CmdArgs::Calc* calcP);
-    void cyclePeaksFiler(const CmdArgs::Cycle* cycleP,
-        const string& fileInName);
-    void fourierCalc(const CmdArgs::Fourier* fourierP,
-        const string& fileInName);
-    void fourierFiler(const string& fileOutName, const string& fileInName,
-        const string& colName, const size_t outputLen,
+    void cyclePeaksFiler(const CmdArgs::Cycle* cycleP);
+    void fourierCalc(const CmdArgs::Fourier* fourierP);
+    void fourierFiler(const string& fileOutName, const size_t outputLen,
         const double outputLenInv, const vector<std::complex<double>>& fftData,
         const vector<double>& fftMag);
     void dataPrinter(const string& dlm, const size_t dataRowTotal,

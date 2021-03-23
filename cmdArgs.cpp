@@ -175,8 +175,7 @@ void Args::process() {
     // After loading file ----------------------------------------------------//
     // Mandatory argument members
     if (m_cycleP) {
-        m_cycleP->process(m_columnP->getDataDoubleVSetP(),
-            m_fileInP->getFileLocation());
+        m_cycleP->process(m_columnP->getDataDoubleVSetP());
         m_rowP->process(
             get<0>(m_cycleP->getRowDefStatus()),
             get<1>(m_cycleP->getRowDefStatus()),
@@ -237,7 +236,6 @@ void Args::process() {
             m_timestepP->setTimestepBgnFromRow(
                 m_cycleP->getCalcCycleData().rowInitial
             );
-
             m_timestepP->setTimestepEndFromRow(
                 m_cycleP->getCalcCycleData().rowFinal
             );
@@ -248,6 +246,10 @@ void Args::process() {
         }
         else if(m_cycleP->getTimeIncrement()>=0.0) {
             m_cycleP->setFrequency(m_timestepP->getRange());
+        }
+        if (m_cycleP->getFileName() == "auto") {
+            m_cycleP->setAutoFileName(m_rowP->getRowBgn(), m_rowP->getRowEnd(),
+                m_fileInP->getFileLocation());
         }
     }
     if (m_fourierP) {
@@ -710,14 +712,13 @@ Cycle::Cycle(int c, int argC, const vector<string>& argV) {
     init(c, argC, argV);
 }
 void Cycle::init(int c, int argC, const vector<string>& argV) {
-    while (c+1 < argC && argV[c+1][0] != '-' && m_argV.size() < 10) {
+    while (c+1 < argC && argV[c+1][0] != '-' && m_argV.size() < m_maxArgs) {
         Args::setCount(++c);
         ++m_argC;
         m_argV.push_back(argV[c]);
     }
 }
-void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
-        const string& fileInName) {
+void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP) {
     for (string cycleArg : m_argV) {
         if (all_of(cycleArg.begin(), cycleArg.end(), isdigit)) {
             if (m_cycleInputCount<0) {
@@ -905,21 +906,6 @@ void Cycle::process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
             }
         }
     }
-    if (m_fileName == "auto") {
-        string fileNameAffix{
-            "_cycles_c" + to_string(m_cycleColNo) + "_r"
-            + to_string(get<0>(m_rowRange)) + "to"
-            + to_string(get<1>(m_rowRange)) + ".csv"
-        };
-        size_t pos;
-        if ((pos = fileInName.find_last_of('.')) != string::npos
-                && (fileInName.size() - pos) < 5) {
-            m_fileName = fileInName.substr(0, pos) + fileNameAffix;
-        }
-        else {
-            m_fileName = fileInName + fileNameAffix;
-        }
-    }
     // Error checking
     if (m_cycleColNo<0) {
         throw logic_error(errorCycleColNameMissing);
@@ -961,6 +947,22 @@ void Cycle::setFrequency(size_t rowBgn, size_t rowEnd) {
 void Cycle::setFrequency(tuple <size_t, size_t> timestepRange) {
     m_frequency = m_cycleInputCount /
         (m_timeIncrement*(get<1>(timestepRange) - get<0>(timestepRange)));
+}
+void Cycle::setAutoFileName(const size_t rowBgn, const size_t rowEnd,
+        const string& fileInName) {
+    string fileNameAffix{
+        "_cycles_c" + to_string(m_cycleColNo) + "_r"
+        + to_string(rowBgn) + "to"
+        + to_string(rowEnd) + ".csv"
+    };
+    size_t pos;
+    if ((pos = fileInName.find_last_of('.')) != string::npos
+            && (fileInName.size() - pos) < 5) {
+        m_fileName = fileInName.substr(0, pos) + fileNameAffix;
+    }
+    else {
+        m_fileName = fileInName + fileNameAffix;
+    }
 }
 int Cycle::getInputCount() const        { return m_cycleInputCount; }
 CycleInit Cycle::getInitType() const    { return m_cycleInit; }

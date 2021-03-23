@@ -253,6 +253,7 @@ class CmdArgs::Cycle {
   private:
     size_t                  m_argC{0};
     vector<string>          m_argV{};
+    const size_t            m_maxArgs{10};
     CycleInit               m_cycleInit{CycleInit::empty};
     int                     m_cycleInputCount{-1};
     int                     m_cycleColNo{-1};
@@ -278,12 +279,13 @@ class CmdArgs::Cycle {
 
     void init(int c, int argC, const vector<string>& argV);
 
-    void process(const vector<ColData::DoubleV*>& dataDoubleVSetP,
-        const string& fileInName);
+    void process(const vector<ColData::DoubleV*>& dataDoubleVSetP);
 
     void setCalcCDataAndCycleInputCount(ColData::CycleData);
     void setFrequency(size_t rowBgn, size_t rowEnd);
     void setFrequency(tuple <size_t, size_t> timestepRange);
+    void setAutoFileName(const size_t rowBgn, const size_t rowEnd,
+        const string& fileInName);
 
     int getInputCount() const;
     CycleInit getInitType() const;
