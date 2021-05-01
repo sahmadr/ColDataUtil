@@ -376,8 +376,9 @@ class CmdArgs::PrintData {
 
 class CmdArgs::FileData {
   private:
-    string m_fileDataName{""};
-    string m_delimiter{","};
+    const string    m_fileDataNameAffix{"_data.csv"};
+    string          m_fileDataName{""};
+    string          m_delimiter{","};
 
     FileData() = delete;
     FileData(const FileData&) = delete;
@@ -387,7 +388,7 @@ class CmdArgs::FileData {
     explicit FileData(int c, int argC, const vector<string>& argV);
     void process(const string& fileInName);
     const string& getFileName() const;
-    const string& getDelimiter() const;
+    const string getDelimiter() const;
 };
 
 //----------------------------------------------------------------------------//

@@ -1144,19 +1144,16 @@ FileData::FileData(int c, int argC, const vector<string>& argV) {
 }
 void FileData::process(const string& fileInName) {
     size_t pos;
-    string fileOutName;
-    string fileNameAffix{"_data.csv"};
-
     if ((pos = fileInName.find_last_of('.')) != string::npos
             && (fileInName.size() - pos) < 5) {
-        fileOutName = fileInName.substr(0, pos) + fileNameAffix;
+        m_fileDataName = fileInName.substr(0, pos) + m_fileDataNameAffix;
     }
     else {
-        fileOutName = fileInName + fileNameAffix;
+        m_fileDataName = fileInName + m_fileDataNameAffix;
     }
 }
 const string& FileData::getFileName() const { return m_fileDataName; }
-const string& FileData::getDelimiter() const    { return m_delimiter; }
+const string FileData::getDelimiter() const { return m_delimiter; }
 
 //----------------------------------------------------------------------------//
 //****************************** CmdArgs::Help *******************************//
