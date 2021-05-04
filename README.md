@@ -21,6 +21,8 @@ DESCRIPTION
         specified using --separator or --delimiter option. The numbering of
         columns and rows follows zero-based indexing.
 
+        For options that allow a delimiter to be specified, if a special character (e.g. the tab character '\t') needs to be passed on the command line, the correct way to specify it on Bash is preceded it with a $ sign to do the correct conversion to whitespace, e.g. $'\t'.
+
         A brief description of the usage and options is given below.
 
 OPTIONS

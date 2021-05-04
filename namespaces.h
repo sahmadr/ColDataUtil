@@ -165,12 +165,13 @@ namespace Output {
     void fourierFiler(const string& fileOutName, const size_t outputLen,
         const double outputLenInv, const vector<std::complex<double>>& fftData,
         const vector<double>& fftMag);
-    void dataPrinter(const string& dlm, const size_t dataRowTotal,
-        const ColData::IntV* dataTimestepIVP,
-        const vector<ColData::DoubleV*> dataDoubleVSetP);
+    void dataPrinter(const string& dlm, const tuple<size_t, size_t> rowRange,
+        const bool timestepConsistent, const ColData::IntV* dataTimestepIVP,
+        const vector<int>& doubleColSet);
     void dataFiler(const string& fileName, const string& dlm,
-        const size_t dataRowTotal, const ColData::IntV* dataTimestepIVP,
-        const vector<ColData::DoubleV*> dataDoubleVSetP);
+        const tuple<size_t, size_t> rowRange,
+        const bool timestepConsistent, const ColData::IntV* dataTimestepIVP,
+        const vector<int>& doubleColSet);
     template<typename T> const unordered_map<CmdArgs::CalcId, calcType>
         mapCalcIdToCalc;
 }

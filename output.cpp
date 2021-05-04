@@ -77,18 +77,20 @@ void Output::output(CmdArgs::Args* argsP) {
     if (argsP->getPrintDataP()) {
         dataPrinter(
             argsP->getPrintDataP()->getDelimiter(),
-            argsP->getRowP()->getDataRowTotal(),
+            argsP->getRowP()->getRange(),
+            argsP->getTimestepP()->isTimestepConsistent(),
             argsP->getTimestepP()->getDataTimestepIVP(),
-            argsP->getColumnP()->getDataDoubleVSetP()
+            argsP->getColumnP()->getDataDoubleColSet()
         );
     }
     if (argsP->getFileDataP()) {
         dataFiler(
             argsP->getFileDataP()->getFileName(),
             argsP->getFileDataP()->getDelimiter(),
-            argsP->getRowP()->getDataRowTotal(),
+            argsP->getRowP()->getRange(),
+            argsP->getTimestepP()->isTimestepConsistent(),
             argsP->getTimestepP()->getDataTimestepIVP(),
-            argsP->getColumnP()->getDataDoubleVSetP()
+            argsP->getColumnP()->getDataDoubleColSet()
         );
         cout<< "\nThe file data output has been written to \""
             << argsP->getFileDataP()->getFileName() << "\"" << endl;
@@ -415,23 +417,35 @@ void Output::fourierFiler(const string& fileOutName, const size_t outputLen,
 /*
  * Print the data of all the vector columns; first integers and then doubles.
  */
-void Output::dataPrinter(const string& dlm, const size_t dataRowTotal,
-        const ColData::IntV* dataTimestepIVP,
-        const vector<ColData::DoubleV*> dataDoubleVSetP) {
-    cout.setf(ios_base::scientific);
+void Output::dataPrinter(const string& dlm,
+        const tuple<size_t, size_t> rowRange,
+        const bool timestepConsistent, const ColData::IntV* dataTimestepIVP,
+        const vector<int>& doubleColSet) {
+    // cout.setf(ios_base::scientific);
     cout.precision(numeric_limits<double>::max_digits10);
+
+// for (const int colNo : doubleColSet) {
+//             // Print subheadings
+//             cout<< "\n " << DoubleV::getOnePFromCol(colNo)->getColName()
 
     // Print the header line
     cout << '\n';
-    cout << dataTimestepIVP->getColName() << dlm;
-    for (DoubleV* dVP : dataDoubleVSetP) { cout << dVP->getColName() << dlm;}
-    cout << "\n\n";
+    if (timestepConsistent) {
+        cout << dataTimestepIVP->getColName() << dlm;
+    }
+    for (const int colNo : doubleColSet) {
+        cout << DoubleV::getOnePFromCol(colNo)->getColName() << dlm;
+    }
+    cout << '\n';
 
     // Print the data
-    for (size_t row=0; row<dataRowTotal; ++row) {
-        cout << dataTimestepIVP->getData()[row] << dlm;
-        for (DoubleV* dVP : dataDoubleVSetP) {
-            cout << dVP->getData()[row] << dlm;
+    auto [rowBgn, rowEnd] = rowRange;
+    for (size_t row=rowBgn; row<=rowEnd; ++row) {
+        if (timestepConsistent) {
+            cout << dataTimestepIVP->getData()[row] << dlm;
+        }
+        for (const int colNo : doubleColSet) {
+            cout << DoubleV::getOnePFromCol(colNo)->getData()[row] << dlm;
         }
         cout << '\n';
     }
@@ -442,22 +456,30 @@ void Output::dataPrinter(const string& dlm, const size_t dataRowTotal,
  * File the data of all the vector columns; first integers and then doubles.
  */
 void Output::dataFiler(const string& fileName, const string& dlm,
-        const size_t dataRowTotal, const ColData::IntV* dataTimestepIVP,
-        const vector<ColData::DoubleV*> dataDoubleVSetP) {
+        const tuple<size_t, size_t> rowRange,
+        const bool timestepConsistent, const ColData::IntV* dataTimestepIVP,
+        const vector<int>& doubleColSet) {
     ofstream fOut{fileName};
-    fOut.setf(ios_base::scientific);
+    // fOut.setf(ios_base::scientific);
     fOut.precision(numeric_limits<double>::max_digits10);
 
     // File the header line
-    fOut << dataTimestepIVP->getColName() << dlm;
-    for (DoubleV* dVP : dataDoubleVSetP) { fOut << dVP->getColName() << dlm; }
+    if (timestepConsistent) {
+        fOut << dataTimestepIVP->getColName() << dlm;
+    }
+    for (const int colNo : doubleColSet) {
+        fOut << DoubleV::getOnePFromCol(colNo)->getColName() << dlm;
+    }
     fOut << '\n';
 
     // File the data
-    for (size_t row=0; row<dataRowTotal; ++row) {
-        fOut << dataTimestepIVP->getData()[row] << dlm;
-        for (DoubleV* dVP : dataDoubleVSetP) {
-            fOut << dVP->getData()[row] << dlm;
+    auto [rowBgn, rowEnd] = rowRange;
+    for (size_t row=rowBgn; row<=rowEnd; ++row) {
+        if (timestepConsistent) {
+            fOut << dataTimestepIVP->getData()[row] << dlm;
+        }
+        for (const int colNo : doubleColSet) {
+            fOut << DoubleV::getOnePFromCol(colNo)->getData()[row] << dlm;
         }
         fOut << '\n';
     }
