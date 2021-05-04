@@ -1,8 +1,5 @@
-*
-!/**/
-!*.*
-
 .vscode
+coldatautil
 *.dat
 *.csv
 *.ods
