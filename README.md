@@ -21,13 +21,16 @@ DESCRIPTION
         specified using --separator or --delimiter option. The numbering of
         columns and rows follows zero-based indexing.
 
-        For options that allow a delimiter to be specified, if a special character (e.g. the tab character '\t') needs to be passed on the command line, the correct way to specify it on Bash is preceded it with a $ sign to do the correct conversion to whitespace, e.g. $'\t'.
+        For options that allow a delimiter to be specified, if a special
+        character (e.g. the tab character '\t') needs to be passed on the
+        command line, the correct way to specify it on Bash is preceded it with
+        a $ sign to do the correct conversion to whitespace, e.g. $'\t'.
 
         A brief description of the usage and options is given below.
 
 OPTIONS
         -h, --help
-                output this file and exit
+                display README.md help file
 
         -i, --input <FILENAME>
                 specify the FILENAME of the file for processing; FILENAME is
@@ -54,28 +57,28 @@ OPTIONS
 
         -C, --calc, --calculations [CALCULATION1, CALCULATION2, ...]
                 specify the calculations to perform;
-                by default, following will be performed:...;
+                by default, only a few common ones will be performed;
                 the names of all the possible calculation options are given
                 below, followed by the possible keywords that can be used to
                 call them:
 
-                1.  Minimum value in the selected data: min, minimum
-                2.  Maximum value in the selected data: max, maximum
-                3.  Absolute minimum value in the selected data: absmin, minabs
-                4.  Absolute maximum value in the selected data: absmax, maxabs
-                5.  Mean of the selected data: mean, avg, average
-                6.  RMS (quadratic mean) of the selected data: rms, quadratic
-                7.  Fluctuation RMS, which is calculated by taking the square
-                    root of the average of squares of the differences between
-                    the values in the selected data and their mean value: frms,
-                    rmsf
-                8.  Cubic mean: cubic, cubicmean, cubicavg
+                1. Minimum value in the selected data: min, minimum
+                2. Maximum value in the selected data: max, maximum
+                3. Absolute minimum value in the selected data: absmin, minabs
+                4. Absolute maximum value in the selected data: absmax, maxabs
+                5. Mean of the selected data: mean, avg, average
+                6. RMS (quadratic mean) of the selected data: rms, quadratic
+                7. Fluctuation RMS, which is calculated by taking the square
+                        root of the average of squares of the differences
+                        between the values in the selected data and their mean
+                        value: frms, rmsf
+                8. Cubic mean: cubic, cubicmean, cubicavg
 
         -y, --cycle COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o/o=FILENAME]
-                    [r=BEGINROW r=ENDROW] [t=BEGINTIMESTEP t=ENDTIMESTEP]
-                    [f/l/first/last] [NUMBEROFCYCLES]
-                    [m=CENTER] [a=MINAMPLITUDE] [n=MINROWINTERVAL]
-                    [dt=TIMEINCREMENT] [st=SIMTIMECOLUMN]
+                        [r=BEGINROW r=ENDROW] [t=BEGINTIMESTEP t=ENDTIMESTEP]
+                        [f/l/first/last] [NUMBEROFCYCLES]
+                        [m=CENTER] [a=MINAMPLITUDE] [n=MINROWINTERVAL]
+                        [dt=TIMEINCREMENT] [st=SIMTIMECOLUMN]
                 command to count the number of cycles in the given file and
                 find the peaks of each cycle using its crest and trough, which
                 is then used to calculate the maximum peak and the various
@@ -97,14 +100,13 @@ OPTIONS
                         range.
                 2. Troughs mean: is the mean of all the troughs in the given
                         range.
-                3. Peaks mean: is the maximum of all the peaks (or amplitudes),
+                3. Peaks mean: is the mean of all the peaks (or amplitudes),
                         where a peak is calculated by subtracting the mean from
                         each crest or trough and taking its absolute value.
-                4. Peaks mean: is the mean of all the peaks.
-                5. 1/3rd peaks mean: is the mean of the highest 1/3rd of the
+                4. 1/3rd peaks mean: is the mean of the highest 1/3rd of the
                         peaks, similar to the significant wave height (SWH) used
                         in physical oceanography.
-                6. 1/10th peaks mean: is the mean of the highest 1/10th of the
+                5. 1/10th peaks mean: is the mean of the highest 1/10th of the
                         peaks.
 
                 r=BEGINROW r=ENDROW: by default, all of the data is traversed
