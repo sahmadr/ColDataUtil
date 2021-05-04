@@ -59,13 +59,17 @@ OPTIONS
                 below, followed by the possible keywords that can be used to
                 call them:
 
-                1.  Minimum: min, minimum
-                2.  Maximum: max, maximum
-                3.  Absolute minimum: abs-min, absmin, absolute-minimum
-                4.  Absolute maximum: abs-max, absmax, absolute-maximum
-                5.  Mean: mean, avg, average
-                6.  Quadratic mean (RMS): rms, quadratic, quadratic-mean
-                7.  Cubic mean: cubic, cubic-mean, cubic-avg
+                1.  Minimum value in the selected data: min, minimum
+                2.  Maximum value in the selected data: max, maximum
+                3.  Absolute minimum value in the selected data: absmin, minabs
+                4.  Absolute maximum value in the selected data: absmax, maxabs
+                5.  Mean of the selected data: mean, avg, average
+                6.  RMS (quadratic mean) of the selected data: rms, quadratic
+                7.  Fluctuation RMS, which is calculated by taking the square
+                    root of the average of squares of the differences between
+                    the values in the selected data and their mean value: frms,
+                    rmsf
+                8.  Cubic mean: cubic, cubicmean, cubicavg
 
         -y, --cycle COLUMNNAME [c=COLUMN(NUMBER or NAME)] [o/o=FILENAME]
                     [r=BEGINROW r=ENDROW] [t=BEGINTIMESTEP t=ENDTIMESTEP]

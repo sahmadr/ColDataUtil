@@ -185,6 +185,15 @@ double DoubleV::getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const {
     }
     return sum;
 }
+double DoubleV::getSumOfSquaresOfDifference(const double diffVal,
+        const size_t rowBgn, const size_t rowEnd) const {
+    double sum{0};
+    for (size_t r=rowBgn; r<=rowEnd; ++r) {
+        double x{m_data[r] - diffVal};
+        sum += x*x;
+    }
+    return sum;
+}
 
 // Cycles --------------------------------------------------------------------//
 CycleData DoubleV::findCycles(const size_t rowBgn, const size_t rowEnd,

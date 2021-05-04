@@ -108,6 +108,8 @@ class ColData::DoubleV {
     double getSum(const size_t rowBgn, const size_t rowEnd) const;
     double getSumOfSquares(const size_t rowBgn, const size_t rowEnd) const;
     double getSumOfCubes(const size_t rowBgn, const size_t rowEnd) const;
+    double getSumOfSquaresOfDifference(const double diffVal,
+        const size_t rowBgn, const size_t rowEnd) const;
     CycleData findCycles(const size_t rowBgn, const size_t rowEnd,
         const double mean, const double minAmplitude,
         const size_t minRowInterval) const;

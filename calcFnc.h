@@ -91,12 +91,28 @@ double CalcFnc::findMean(const T column,
  * name and return the result.
  */
 template<typename T>
-double CalcFnc::findQuadraticMean(const T column,
+double CalcFnc::findRMS(const T column,
         const size_t rowBgn, const size_t rowEnd) {
     return std::sqrt(
                 DoubleV::getOnePFromCol(column)->getSumOfSquares(rowBgn, rowEnd)
                     /(rowEnd - rowBgn + 1)
             );
+}
+
+/*
+ * Find the fluctuation quadratic mean (RMS) of the given column using the mean
+ * and its Id number or name and return the result.
+ */
+template<typename T>
+double CalcFnc::findFluctuationRMS(const T column,
+        const size_t rowBgn, const size_t rowEnd) {
+    double mean {CalcFnc::findMean(column, rowBgn, rowEnd)};
+    return
+        std::sqrt(
+            DoubleV::getOnePFromCol(column)->getSumOfSquaresOfDifference(
+                    mean, rowBgn, rowEnd)
+                /(rowEnd - rowBgn + 1)
+        );
 }
 
 /*

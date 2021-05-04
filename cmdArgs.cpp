@@ -403,7 +403,8 @@ void Calc::process() {
             // CalcId::findAbsMin,
             // CalcId::findAbsMax,
             CalcId::findMean,
-            CalcId::findQuadraticMean,
+            CalcId::findRMS,
+            CalcId::findFluctuationRMS,
             // CalcId::findCubicMean,
         });
     }

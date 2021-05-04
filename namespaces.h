@@ -93,7 +93,7 @@ namespace CmdArgs {
     enum class Option { delimiter, fileIn, calculation, column, row, timestep,
         cycle, fourier, fileOut, printData, fileData, help, version };
     enum class CalcId { findMin, findMax, findAbsMin, findAbsMax, findMean,
-        findQuadraticMean, findCubicMean, findFourier };
+        findRMS, findFluctuationRMS, findCubicMean, findFourier };
     enum class CycleInit { first, last, full, empty };
     class Args;
     class Delimiter;
@@ -130,7 +130,9 @@ namespace CalcFnc {
         const size_t rowBgn, const size_t rowEnd);
     template<typename T> double findMean(const T column,
         const size_t rowBgn, const size_t rowEnd);
-    template<typename T> double findQuadraticMean(const T column,
+    template<typename T> double findRMS(const T column,
+        const size_t rowBgn, const size_t rowEnd);
+    template<typename T> double findFluctuationRMS(const T column,
         const size_t rowBgn, const size_t rowEnd);
     template<typename T> double findCubicMean(const T column,
         const size_t rowBgn, const size_t rowEnd);
